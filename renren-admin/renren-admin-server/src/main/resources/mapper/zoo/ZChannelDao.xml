@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.renren.zadmin.dao.ZChannelDao">
+
+    <resultMap type="io.renren.zadmin.entity.ZChannelEntity" id="zChannelMap">
+        <result property="id" column="id"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="chargeEnabled" column="charge_enabled"/>
+        <result property="withdrawEnabled" column="withdraw_enabled"/>
+        <result property="channelName" column="channel_name"/>
+        <result property="channelLabel" column="channel_label"/>
+        <result property="chargeRate" column="charge_rate"/>
+        <result property="withdrawRate" column="withdraw_rate"/>
+        <result property="withdrawFix" column="withdraw_fix"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="payCode" column="pay_code"/>
+        <result property="balanceMemo" column="balance_memo"/>
+        <result property="chargeUrl" column="charge_url"/>
+        <result property="withdrawUrl" column="withdraw_url"/>
+        <result property="chargeQueryUrl" column="charge_query_url"/>
+        <result property="withdrawQueryUrl" column="withdraw_query_url"/>
+        <result property="balanceUrl" column="balance_url"/>
+        <result property="ext1" column="ext1"/>
+        <result property="ext2" column="ext2"/>
+        <result property="ext3" column="ext3"/>
+        <result property="publicKey" column="public_key"/>
+        <result property="privateKey" column="private_key"/>
+        <result property="platformKey" column="platform_key"/>
+        <result property="whiteIp" column="white_ip"/>
+        <result property="creator" column="creator"/>
+        <result property="createDate" column="create_date"/>
+        <result property="updater" column="updater"/>
+        <result property="updateDate" column="update_date"/>
+    </resultMap>
+
+</mapper>

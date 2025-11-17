@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.renren.zadmin.dao.ZAgentWithdrawDao">
+
+    <resultMap type="io.renren.zadmin.entity.ZAgentWithdrawEntity" id="zAgentWithdrawMap">
+        <result property="id" column="id"/>
+        <result property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="agentId" column="agent_id"/>
+        <result property="agentName" column="agent_name"/>
+        <result property="basketId" column="basket_id"/>
+        <result property="basketUser" column="basket_user"/>
+        <result property="basketNo" column="basket_no"/>
+        <result property="amount" column="amount"/>
+        <result property="accountUser" column="account_user"/>
+        <result property="accountNo" column="account_no"/>
+        <result property="accountBank" column="account_bank"/>
+        <result property="accountIfsc" column="account_ifsc"/>
+        <result property="processStatus" column="process_status"/>
+        <result property="utr" column="utr"/>
+        <result property="pictures" column="pictures"/>
+        <result property="creator" column="creator"/>
+        <result property="createDate" column="create_date"/>
+        <result property="updater" column="updater"/>
+        <result property="updateDate" column="update_date"/>
+    </resultMap>
+
+</mapper>

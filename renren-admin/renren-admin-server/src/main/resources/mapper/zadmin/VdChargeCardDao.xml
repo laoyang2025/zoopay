@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.renren.zadmin.dao.VdChargeCardDao">
+
+    <resultMap type="io.renren.zadmin.entity.VdChargeCardEntity" id="vdChargeCardMap">
+        <result property="successAmount" column="success_amount"/>
+        <result property="success" column="success"/>
+        <result property="fail" column="fail"/>
+        <result property="successRate" column="success_rate"/>
+        <result property="createDate" column="create_date"/>
+        <result property="merchantName" column="merchant_name"/>
+        <result property="cardNo" column="card_no"/>
+        <result property="cardUser" column="card_user"/>
+        <result property="deptName" column="dept_name"/>
+    </resultMap>
+
+</mapper>

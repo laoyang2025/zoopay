@@ -1,0 +1,23 @@
+server:
+  port: 9999
+
+spring:
+  application:
+    name: zclient
+  #环境 dev|test|prod
+  profiles:
+    active: dev
+  messages:
+    encoding: UTF-8
+    basename: i18n/messages_common
+
+zclient:
+  appKey: 9999-9999
+  secretKey: asdfadfaf
+  baseUrl: http://lqpay.txzfpay.top
+  withdraw:
+    memo: memo
+    accountBank: bank
+    accountNo: 1231231231231
+    accountUser: user1
+    accountIfsc: ifsc1

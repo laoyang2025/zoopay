@@ -66,7 +66,7 @@ public class JustPay extends PostFormChannel {
         map.put("merchantId", channelEntity.getMerchantId());
         map.put("orderId", entity.getId().toString());
         map.put("orderAmount", entity.getAmount());
-        map.put("channelType", entity.getPayCode());
+        map.put("channelType", channelEntity.getPayCode());
         map.put("notifyUrl", getCollectNotifyUrl(entity));
 
     }

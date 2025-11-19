@@ -73,7 +73,7 @@ public class YhtPay extends PostFormChannel {
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchNo", channelEntity.getMerchantId());
         map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
-        map.put("ifCode", "alipay");
+        map.put("ifCode", entity.getPayCode());
         map.put("apiInfo", channelEntity.getPlatformKey());
         map.put("mchOrderNo", entity.getId().toString());
         map.put("notifyUrl", getCollectNotifyUrl(entity));

@@ -45,9 +45,11 @@ public class GchPay extends PostFormChannel {
      */
     @Override
     public Pair<String, String> getSign(TreeMap<String, Object> map, String api) {
-        if ("charge".equals(api)) {
-            return null; // 发送的时候不需要签名
-        }
+
+//        if ("charge".equals(api)) {
+//            return null; // 发送的时候不需要签名
+//        }
+
         ZChannelEntity channelEntity = channelEntity();
         String signStr = this.md5SignString(map, false) + "&key=" + channelEntity.getPrivateKey();
         String sign = DigestUtil.md5Hex(signStr).toUpperCase();
@@ -58,38 +60,40 @@ public class GchPay extends PostFormChannel {
     }
 
     /**
-     * 商户号	mchNo	是	String(30)	Y1715088123	商户号
-     * 支付金额	amount	是	int	100	支付金额,单位分
-     * 支付方式	ifCode	是	String(32)	alipay	支付方式：微信为wxpay，支付宝为alipay
-     * 预留信息	apiInfo	是	String(32)	123456	商户预留字段，用于验证商户
-     * 商户订单号	mchOrderNo	是	String(30)	20160427210604000490	商户生成的订单号
-     * 异步通知地址	notifyUrl	是	String(128)	https://user.yunhuitxpay.com/notify.html	支付结果异步回调URL,只有传了该值才会发起回调
-     * 商品标题	subject	否	String(64)	WAP商品标题测试	商品标题
-     * 商品描述	body	否	String(256)	WAP商品描述测试	商品描述
+     * {
+     *     "mchNo": "M17066050245",
+     *     "mchOrderNo": "mho1624005107281",
+     *     "productId": "1000",
+     *     "amount": 8000,
+     *     "clientIp": "210.73.10.148",
+     *     "notifyUrl": "http://192.168.0.29:8080/test/v3",
+     *     "reqTime": 1708531905805,
+     *     "sign": "C0360322DAF458EC27B515B51ACCFF311"
+     * }
      */
     @Override
     public void setChargeMap(ZChargeEntity entity, TreeMap<String, Object> map) {
         ZChannelEntity channelEntity = channelEntity();
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchNo", channelEntity.getMerchantId());
-        map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
-        map.put("ifCode", entity.getPayCode());
-        map.put("apiInfo", channelEntity.getPlatformKey());
         map.put("mchOrderNo", entity.getId().toString());
+        map.put("productId", "1000");
+        map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
+        map.put("clientIp", "210.73.10.148");
         map.put("notifyUrl", getCollectNotifyUrl(entity));
+        map.put("reqTime", System.currentTimeMillis());
     }
 
     /**
-     * 商户号	mchNo	是	String(30)	Y1715088123	商户号
-     * 通道ID	appId	是	String(24)	Y1715088123-1	通道ID
-     * 支付订单号	payOrderId	是	String(30)	P20160427210604000490	支付中心生成的订单号，与mchOrderNo二者传一即可
-     * 商户订单号	mchOrderNo	是	String(30)	20160427210604000490	商户生成的订单号，与payOrderId二者传一即可
-     * 请求时间	reqTime	是	long	1622016572190	请求接口时间,13位时间戳
-     * 接口版本	version	是	String(3)	1.0	接口版本号，固定：1.0
-     * 签名	sign	是	String(32)	C380BEC2BFD727A4B6845133519F3AD6	签名值，详见签名算法
-     * 签名类型	signType	是	String(32)	MD5	签名类型，目前只支持MD5方式
-     * 预留信息	apiInfo	是	String(32)	123456	商户预留字段，用于验证商户
-     *
+     * {
+     *     "payOrderId": "P202106181104177050002",
+     *     "amount": 1000,
+     *     "reqTime": "1622016572190",
+     *     "mchNo": "M1623984572",
+     *     "sign": "46940C58B2F3AE426B77A297ABF4D31E"
+     * }
+     * @param entity
+     * @param map
      */
     @Override
     public void setChargeQueryMap(ZChargeEntity entity, TreeMap<String, Object> map) {
@@ -105,7 +109,11 @@ public class GchPay extends PostFormChannel {
     }
 
     /**
-     * 余额查询组串
+     * {
+     *     "mchNo": "M1623984572",
+     *     "reqTime": "1705221893125",
+     *     "sign": "D41FE9BFBBCA6CABB4A6DAEA5EBFDA14"
+     * }
      */
     @Override
     public void setBalanceMap(TreeMap<String, Object> map) {

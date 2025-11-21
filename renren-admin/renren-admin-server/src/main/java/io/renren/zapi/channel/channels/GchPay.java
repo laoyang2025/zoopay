@@ -189,13 +189,12 @@ public class GchPay extends PostFormChannel {
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
         log.info("get response: {}", jsonObject);
-        if (jsonObject.getIntValue("code") == 0) {
+        if (jsonObject.getIntValue("orderState") == 1) {
             JSONObject data = jsonObject.getJSONObject("data");
             ChannelChargeResponse response = new ChannelChargeResponse();
-            String payUrl = data.getString("qrUrl");
+            String payUrl = data.getString("payData");
             if (StringUtils.isNotEmpty(payUrl)) {
-                JSONObject originalResponse = data.getJSONObject("originalResponse");
-                response.setChannelOrder(originalResponse.getString("payOrderId"));
+                response.setChannelOrder(data.getString("payOrderId"));
                 response.setPayUrl(payUrl);
                 response.setUpi(null);
                 response.setRaw(null);

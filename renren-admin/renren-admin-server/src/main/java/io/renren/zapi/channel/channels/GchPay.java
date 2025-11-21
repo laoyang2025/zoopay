@@ -77,7 +77,7 @@ public class GchPay extends PostFormChannel {
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchNo", channelEntity.getMerchantId());
         map.put("mchOrderNo", entity.getId().toString());
-        map.put("productId", "1000");
+        map.put("productId", channelEntity.getPayCode());
         map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
         map.put("clientIp", "210.73.10.148");
         map.put("notifyUrl", getCollectNotifyUrl(entity));

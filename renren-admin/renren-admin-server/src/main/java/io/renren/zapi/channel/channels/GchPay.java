@@ -61,14 +61,14 @@ public class GchPay extends PostFormChannel {
 
     /**
      * {
-     *     "mchNo": "M17066050245",
-     *     "mchOrderNo": "mho1624005107281",
-     *     "productId": "1000",
-     *     "amount": 8000,
-     *     "clientIp": "210.73.10.148",
-     *     "notifyUrl": "http://192.168.0.29:8080/test/v3",
-     *     "reqTime": 1708531905805,
-     *     "sign": "C0360322DAF458EC27B515B51ACCFF311"
+     * "mchNo": "M17066050245",
+     * "mchOrderNo": "mho1624005107281",
+     * "productId": "1000",
+     * "amount": 8000,
+     * "clientIp": "210.73.10.148",
+     * "notifyUrl": "http://192.168.0.29:8080/test/v3",
+     * "reqTime": 1708531905805,
+     * "sign": "C0360322DAF458EC27B515B51ACCFF311"
      * }
      */
     @Override
@@ -77,7 +77,7 @@ public class GchPay extends PostFormChannel {
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchNo", channelEntity.getMerchantId());
         map.put("mchOrderNo", entity.getId().toString());
-        map.put("productId", channelEntity.getPayCode());
+        map.put("productId", "1002");
         map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
         map.put("clientIp", "210.73.10.148");
         map.put("notifyUrl", getCollectNotifyUrl(entity));
@@ -86,12 +86,13 @@ public class GchPay extends PostFormChannel {
 
     /**
      * {
-     *     "payOrderId": "P202106181104177050002",
-     *     "amount": 1000,
-     *     "reqTime": "1622016572190",
-     *     "mchNo": "M1623984572",
-     *     "sign": "46940C58B2F3AE426B77A297ABF4D31E"
+     * "payOrderId": "P202106181104177050002",
+     * "amount": 1000,
+     * "reqTime": "1622016572190",
+     * "mchNo": "M1623984572",
+     * "sign": "46940C58B2F3AE426B77A297ABF4D31E"
      * }
+     *
      * @param entity
      * @param map
      */
@@ -99,20 +100,17 @@ public class GchPay extends PostFormChannel {
     public void setChargeQueryMap(ZChargeEntity entity, TreeMap<String, Object> map) {
         ZChannelEntity channelEntity = channelEntity();
 
-        map.put("mchNo", channelEntity.getMerchantId());
-        map.put("appId", channelEntity.getMerchantId() + "-1");
-        map.put("mchOrderNo", entity.getId().toString());
+        map.put("payOrderId", entity.getChannelOrder());
+        map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).longValue());
         map.put("reqTime", System.currentTimeMillis());
-        map.put("version", "1.0");
-        map.put("apiInfo", channelEntity.getPlatformKey());
-        map.put("signType", "MD5");
+        map.put("mchNo", channelEntity.getMerchantId());
     }
 
     /**
      * {
-     *     "mchNo": "M1623984572",
-     *     "reqTime": "1705221893125",
-     *     "sign": "D41FE9BFBBCA6CABB4A6DAEA5EBFDA14"
+     * "mchNo": "M1623984572",
+     * "reqTime": "1705221893125",
+     * "sign": "D41FE9BFBBCA6CABB4A6DAEA5EBFDA14"
      * }
      */
     @Override
@@ -189,16 +187,18 @@ public class GchPay extends PostFormChannel {
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
         log.info("get response: {}", jsonObject);
-        if (jsonObject.getIntValue("orderState") == 1) {
+        if (jsonObject.getIntValue("code") == 0) {
             JSONObject data = jsonObject.getJSONObject("data");
             ChannelChargeResponse response = new ChannelChargeResponse();
-            String payUrl = data.getString("payData");
-            if (StringUtils.isNotEmpty(payUrl)) {
-                response.setChannelOrder(data.getString("payOrderId"));
-                response.setPayUrl(payUrl);
-                response.setUpi(null);
-                response.setRaw(null);
-                return response;
+            if (data.getIntValue("orderState") == 1) {
+                String payUrl = data.getString("payData");
+                if (StringUtils.isNotEmpty(payUrl)) {
+                    response.setChannelOrder(data.getString("payOrderId"));
+                    response.setPayUrl(payUrl);
+                    response.setUpi(null);
+                    response.setRaw(null);
+                    return response;
+                }
             }
             throw new RenException(channelEntity().getChannelLabel() + "错误:" + jsonObject.getString("msg"));
         } else {

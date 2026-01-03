@@ -81,15 +81,17 @@ public class LoginController {
     @Operation(summary = "账号密码登录")
     public Result<UserTokenDTO> login(@RequestBody LoginDTO login) {
 
-        if (login.getUuid().equals("111111") && login.getCaptcha().equals("111111")) {
-            // 特殊对待， 不校验验证码
-        } else {
-            // 验证码效验
-            boolean flag = captchaService.validate(login.getUuid(), login.getCaptcha());
-            if (!flag) {
-                throw new RenException("验证码错误");
-            }
-        }
+        // 暂时不验证
+
+//        if (login.getUuid().equals("111111") && login.getCaptcha().equals("111111")) {
+//            // 特殊对待， 不校验验证码
+//        } else {
+//            // 验证码效验
+//            boolean flag = captchaService.validate(login.getUuid(), login.getCaptcha());
+//            if (!flag) {
+//                throw new RenException("验证码错误");
+//            }
+//        }
 
         Authentication authentication;
         try {

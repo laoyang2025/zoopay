@@ -96,7 +96,7 @@ abstract public class AbstractChannel implements PayChannel {
         TreeMap<String, Object> map = new TreeMap<>();
         setChargeMap(entity, map);
 
-        // 计算并填充签名
+        // 计算并填充签名:  如果getSign返回不为空才需要
         Pair<String, String> sign = getSign(map, API_CHARGE);
         if (sign != null) {
             map.put(signField(), sign.getValue());
@@ -110,7 +110,7 @@ abstract public class AbstractChannel implements PayChannel {
             // 拿到服务器结果
             JSONObject jsonObject = JSON.parseObject(resp);
             ChannelChargeResponse response = doCharge(jsonObject);
-            if (response.getError() != null) {
+            if (response.getError() != null && sign != null ) {
                 getContext().error("signstr: {} | sign: {}", sign.getKey(), sign.getValue());
             }
             return response;

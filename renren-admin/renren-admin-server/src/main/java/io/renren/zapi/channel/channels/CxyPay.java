@@ -80,6 +80,14 @@ public class CxyPay extends PostFormChannel {
      */
     @Override
     public void setChargeMap(ZChargeEntity entity, TreeMap<String, Object> map) {
+
+        if (!rateLimiterSecond.tryAcquire()) {
+            throw new RenException("被限流");
+        }
+        if (!rateLimiterMinute.tryAcquire()) {
+            throw new RenException("被限流");
+        }
+
         ZChannelEntity channelEntity = channelEntity();
 
         // body
@@ -141,8 +149,7 @@ public class CxyPay extends PostFormChannel {
     }
 
 
-    private static RateLimiter rateLimiterSecond = RateLimiter.create(1);
-    private static RateLimiter rateLimiterMinute = RateLimiter.create(20);
+    private static RateLimiter rateLimiterSecond = RateLimiter.create(0.1);
 
 
     /**
@@ -151,10 +158,6 @@ public class CxyPay extends PostFormChannel {
     public void setWithdrawMap(ZWithdrawEntity entity, TreeMap<String, Object> map) {
 
         if (!rateLimiterSecond.tryAcquire()) {
-            throw new RenException("被限流");
-        }
-
-        if (!rateLimiterMinute.tryAcquire()) {
             throw new RenException("被限流");
         }
 

@@ -39,6 +39,7 @@ public class MD5Util{
 			signDatas.append(SortedMap.get(stringSort.get(i)));
 		}
 		signDatas.append(md5Key);
+
 		System.out.println(signDatas.toString());
 		String sign = encrypt2MD5(signDatas.toString());
 		return sign;

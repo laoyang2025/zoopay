@@ -90,7 +90,7 @@ public class CxyPay extends PostFormChannel {
         bodyMap.put("acqCode", channelEntity.getPublicKey());
         bodyMap.put("notifyUrl", getCollectNotifyUrl(entity));
         bodyMap.put("orderAmt", entity.getAmount().toString());
-        bodyMap.put("sign", MD5Util.signData(bodyMap, channelEntity.getPrivateKey().substring(0,16)));
+        bodyMap.put("sign", MD5Util.signData(bodyMap, channelEntity.getPrivateKey().substring(0, 16)));
 
         String bodyStr = null;
         try {
@@ -112,12 +112,13 @@ public class CxyPay extends PostFormChannel {
         ZChannelEntity channelEntity = channelEntity();
 
         Map<String, Object> bodyMap = new TreeMap<>();
-        bodyMap.put("acqMerchantNo", channelEntity.getMerchantId());
-        bodyMap.put("orderNo", entity.getId().toString());
-        bodyMap.put("sign", MD5Util.signData(bodyMap, channelEntity.getPrivateKey()));
+        bodyMap.put("orderNoDown", entity.getId().toString());
+        bodyMap.put("agentNo", channelEntity.getPlatformKey());
 
         String bodyStr = null;
         try {
+            log.info("签名前包含的字段: {}", objectMapper().writeValueAsString(bodyMap));
+            bodyMap.put("sign", MD5Util.signData(bodyMap, channelEntity.getPrivateKey().substring(0, 16)));
             bodyStr = Aes.llyEncrypt(objectMapper().writeValueAsString(bodyMap),
                     channelEntity.getPrivateKey().substring(16, 32));
         } catch (Exception e) {
@@ -158,19 +159,7 @@ public class CxyPay extends PostFormChannel {
         }
 
         ZChannelEntity channelEntity = channelEntity();
-        map.put("entryType", "IMPS");
-        map.put("amount", entity.getAmount().multiply(new BigDecimal("100")).setScale(0));
-        map.put("accountNo", entity.getAccountNo());
-        map.put("accountCode", entity.getAccountIfsc());
-        map.put("accountName", entity.getAccountUser());
-        map.put("mchOrderNo", entity.getId().toString());
-        map.put("accountEmail", "NA@gmail.com");
-        map.put("accountPhone", "981231231231");
-        map.put("mchNo", channelEntity.getMerchantId());
-        map.put("appId", channelEntity.getPlatformKey());
-        map.put("notifyUrl", getWithdrawNotifyUrl(entity));
-        map.put("transferDesc", new Date().getTime());
-        map.put("bankName", entity.getAccountBank());
+
     }
 
     /**
@@ -187,12 +176,13 @@ public class CxyPay extends PostFormChannel {
 
 
     /**
-     *  recv: {"orderNo":"WXZFB855CF3AA30C04050920B28657F9",
-     *  "payUrl":"http://8.129.225.17/lvyou/toKqPay.app?id=WXZFB855CF3AA30C04050920B28657F9",
-     *  "rescode":"00",
-     *  "resmsg":"下单成功",
-     *  "sign":"d5adaab35e99aaa35d48f3b48d9d322f","time":"1767452793785"
-     *  }
+     * recv: {"orderNo":"WXZFB855CF3AA30C04050920B28657F9",
+     * "payUrl":"http://8.129.225.17/lvyou/toKqPay.app?id=WXZFB855CF3AA30C04050920B28657F9",
+     * "rescode":"00",
+     * "resmsg":"下单成功",
+     * "sign":"d5adaab35e99aaa35d48f3b48d9d322f","time":"1767452793785"
+     * }
+     *
      * @param jsonObject
      * @return
      */
@@ -244,20 +234,13 @@ public class CxyPay extends PostFormChannel {
     @Override
     public ChannelChargeQueryResponse doChargeQuery(JSONObject jsonObject) {
         ChannelChargeQueryResponse response = new ChannelChargeQueryResponse();
-        int code = jsonObject.getIntValue("code");
-        if (code == 0) {
-            JSONObject data = jsonObject.getJSONObject("data");
-            int state = data.getIntValue("state");
-            if (state == 2) {
-                response.setChannelOrder(data.getString("payOrderId"));
-                response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
-            } else {
-                response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
-            }
+        String code = jsonObject.getString("rescode");
+        if (code.equals("00")) {
+            response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
             return response;
         } else {
             response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
-            response.setError(jsonObject.getString("msg"));
+            response.setError(jsonObject.getString("resmsg"));
             return response;
         }
     }
@@ -326,8 +309,9 @@ public class CxyPay extends PostFormChannel {
     public ChannelChargeQueryResponse chargeNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZChargeEntity chargeEntity) throws IOException {
         ChannelChargeQueryResponse resp = new ChannelChargeQueryResponse();
 
-        TreeMap<String, Object> map = checkSignByForm((String) body, API_CHARGE_NOTIFY);
-        if ("2".equals(map.get("state"))) {
+        TreeMap<String, Object> map = this.getTreeMapByForm((String) body);
+
+        if ("0000".equals(map.get("rescode"))) {
             resp.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
             return resp;
         }

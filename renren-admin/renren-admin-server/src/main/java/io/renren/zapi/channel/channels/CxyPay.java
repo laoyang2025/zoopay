@@ -35,6 +35,8 @@ import io.renren.zapi.channel.channels.cxy.util.Aes;
 @Slf4j
 public class CxyPay extends PostFormChannel {
 
+    private static RateLimiter rateLimiterSecond = RateLimiter.create(0.1);
+
     /**
      * 签名值的字段名称
      */
@@ -82,9 +84,6 @@ public class CxyPay extends PostFormChannel {
     public void setChargeMap(ZChargeEntity entity, TreeMap<String, Object> map) {
 
         if (!rateLimiterSecond.tryAcquire()) {
-            throw new RenException("被限流");
-        }
-        if (!rateLimiterMinute.tryAcquire()) {
             throw new RenException("被限流");
         }
 
@@ -149,7 +148,6 @@ public class CxyPay extends PostFormChannel {
     }
 
 
-    private static RateLimiter rateLimiterSecond = RateLimiter.create(0.1);
 
 
     /**

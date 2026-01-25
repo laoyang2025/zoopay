@@ -143,7 +143,7 @@ public class ApiService {
 
         // 白名单检查
         if (!merchant.getWhiteIp().contains(CommonUtils.getIp())) {
-            log.error("invalid ip: {}, merchant: {}", CommonUtils.getIp(), merchant.getUsername());
+            log.error("invalid ip: {}, merchant: {}, whiteIP: {}", CommonUtils.getIp(), merchant.getUsername(), merchant.getWhiteIp());
             throw new RenException("invalid ip:" + CommonUtils.getIp());
         }
 

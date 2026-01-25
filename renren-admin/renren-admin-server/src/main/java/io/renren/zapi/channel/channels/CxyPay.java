@@ -93,7 +93,7 @@ public class CxyPay extends PostFormChannel {
         Map<String, Object> bodyMap = new TreeMap<>();
         bodyMap.put("acqMerchantNo", channelEntity.getMerchantId());
         bodyMap.put("orderNo", entity.getId().toString());
-        bodyMap.put("payType", "ZFB");
+        bodyMap.put("payType", channelEntity.getPayCode());
         bodyMap.put("acqCode", channelEntity.getPublicKey());
         bodyMap.put("notifyUrl", getCollectNotifyUrl(entity));
         bodyMap.put("orderAmt", entity.getAmount().toString());

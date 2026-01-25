@@ -46,7 +46,6 @@ public class KuaiPay extends PostFormChannel {
 
     /**
      * 计算签名
-
      * inputCharset={inputCharset}&
      * pageUrl={pageUrl}&
      * bgUrl={bgUrl}&
@@ -83,7 +82,6 @@ public class KuaiPay extends PostFormChannel {
      * extDataType={extDataType}&
      * extDataContent={extDataContent}&
      * period={period}
-
      *
      * @return
      */

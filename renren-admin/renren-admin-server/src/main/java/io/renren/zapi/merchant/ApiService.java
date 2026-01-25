@@ -142,12 +142,14 @@ public class ApiService {
         }
 
         // 白名单检查
+        log.info("检查白名单...");
         if (!merchant.getWhiteIp().contains(CommonUtils.getIp())) {
             log.error("invalid ip: {}, merchant: {}, whiteIP: {}", CommonUtils.getIp(), merchant.getUsername(), merchant.getWhiteIp());
             throw new RenException("invalid ip:" + CommonUtils.getIp());
         }
 
         // 匹配
+        log.info("匹配appKey...");
         String key = merchant.getDeptId().toString() + "-" + merchant.getId().toString();
         if (!key.equals(appKey)) {
             log.error("invalid header x-app-key:{}, calc key:{}" + appKey, key);

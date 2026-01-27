@@ -43,8 +43,13 @@ public class BochPay extends PostFormChannel {
      */
     @Override
     public Pair<String, String> getSign(TreeMap<String, Object> map, String api) {
+
+        Object payIp = map.remove("pay_ip");
+        Object payProductname = map.remove("pay_productname");
         String signstr = md5SignString(map, false) + "&key=" + channelEntity().getPrivateKey();
         String sign = DigestUtil.md5Hex(signstr).toUpperCase();
+        map.put("pay_ip", payIp);
+        map.put("pay_productname", payProductname);
         return Pair.of(signstr, sign);
     }
 
@@ -63,12 +68,10 @@ public class BochPay extends PostFormChannel {
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
         log.info("doCharge: {}", jsonObject);
-        if (jsonObject.getIntValue("code") == 1) {
+        if (jsonObject.getString("status").equals("1")) {
             ChannelChargeResponse response = new ChannelChargeResponse();
-            response.setPayUrl(jsonObject.getString("payurl"));
-            response.setUpi(jsonObject.getString("qrcode"));
-            response.setRaw(jsonObject.getString("urlscheme"));
-            response.setChannelOrder(jsonObject.getString("trade_no"));
+            response.setPayUrl(jsonObject.getString("h5_url"));
+            response.setChannelOrder(jsonObject.getString("mch_order_id"));
             return response;
         } else {
             throw new RenException(channelEntity().getChannelLabel() + "错误:" + jsonObject.getString("msg"));
@@ -132,10 +135,8 @@ public class BochPay extends PostFormChannel {
     @Override
     public ChannelChargeQueryResponse doChargeQuery(JSONObject jsonObject) {
         ChannelChargeQueryResponse response = new ChannelChargeQueryResponse();
-        int code = jsonObject.getIntValue("code");
-        int status = jsonObject.getIntValue("status");
-        if (code == 1 && status == 1) {
-            response.setChannelOrder(jsonObject.getString("trade_no"));
+        String tradeState = jsonObject.getString("trade_state");
+        if (tradeState.equals("SUCCESS")) {
             response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
         } else {
             response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
@@ -144,20 +145,12 @@ public class BochPay extends PostFormChannel {
     }
 
     /**
-     * 操作类型	act	是	String	order	此API固定值
-     * 商户ID	pid	是	Int	1001
-     * 商户密钥	key	是	String	89unJUB8HZ54Hj7x4nUj56HN4nUzUJ8i
-     * 系统订单号	trade_no	选择	String	20160806151343312
-     * 商户订单号	out_trade_no	选择	String	20160806151343349
-     * 组收款查询报文
      */
     @Override
     public void setChargeQueryMap(ZChargeEntity entity, TreeMap<String, Object> map) {
-        map.put("act", "order");
-        map.put("pid", Integer.parseInt(channelEntity().getMerchantId()));
-        map.put("key", channelEntity().getPrivateKey());
-        map.put("trade_no", entity.getChannelOrder());
-        map.put("out_trade_no", entity.getId().toString());
+        ZChannelEntity channelEntity = channelEntity();
+        map.put("pay_memberid", channelEntity.getMerchantId());
+        map.put("pay_orderid", entity.getId().toString());
     }
 
     /**
@@ -215,19 +208,22 @@ public class BochPay extends PostFormChannel {
      */
     @Override
     public ChannelChargeQueryResponse chargeNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZChargeEntity chargeEntity) throws IOException {
-        Map<String, String> map = (Map<String, String>) body;
-        // 验证签名
-        String sign = map.get(signField());
-        map.remove(signField());
-        TreeMap<String, Object> tmap = new TreeMap<>(map);
-        Pair<String, String> pair = getSign(tmap, API_CHARGE_NOTIFY);
-        if (!pair.getValue().equals(sign)) {
-            throw new RenException("invalid signature");
-        }
+        log.info("body = {}", body);
+
+        TreeMap<String, Object> map = this.getTreeMapByForm((String)body);
+
+//        // 验证签名
+//        String sign = map.get(signField());
+//        map.remove(signField());
+//        TreeMap<String, Object> tmap = new TreeMap<>(map);
+//        Pair<String, String> pair = getSign(tmap, API_CHARGE_NOTIFY);
+//        if (!pair.getValue().equals(sign)) {
+//            throw new RenException("invalid signature");
+//        }
 
         ChannelChargeQueryResponse resp = new ChannelChargeQueryResponse();
 
-        if (map.get("trade_status").equals("TRADE_SUCCESS")) {
+        if (map.get("returncode").equals("00")) {
             resp.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
             return resp;
         }

@@ -104,7 +104,7 @@ public class BochPay extends PostFormChannel {
         map.put("pay_memberid", channelEntity.getMerchantId());
         map.put("pay_orderid", entity.getId().toString());
         map.put("pay_applydate", DateUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
-        map.put("pay_bankcode", "105"); // todo
+        map.put("pay_bankcode", channelEntity.getPayCode()); // todo
         map.put("pay_notifyurl", this.getCollectNotifyUrl(entity));
         map.put("pay_callbackurl", entity.getCallbackUrl());
         map.put("pay_amount", entity.getAmount().toString());

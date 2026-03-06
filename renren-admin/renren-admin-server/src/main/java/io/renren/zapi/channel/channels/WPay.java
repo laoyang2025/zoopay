@@ -14,7 +14,6 @@ import io.renren.zapi.channel.dto.ChannelBalanceResponse;
 import io.renren.zapi.channel.dto.ChannelChargeQueryResponse;
 import io.renren.zapi.channel.dto.ChannelChargeResponse;
 import io.renren.zapi.channel.dto.ChannelWithdrawResponse;
-import io.renren.zapi.utils.CommonUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,7 @@ import java.util.TreeMap;
 
 // 老杨的机构:  Yang
 @Slf4j
-public class QPay extends PostJsonChannel {
+public class WPay extends PostJsonChannel {
 
     /**
      * 签名值的字段名称
@@ -75,7 +74,6 @@ public class QPay extends PostJsonChannel {
 
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchId", channelEntity.getMerchantId());
-        // map.put("wayCode", "1001");
         map.put("wayCode", channelEntity.getPayCode());
         map.put("subject", "service");
         map.put("body", "service");

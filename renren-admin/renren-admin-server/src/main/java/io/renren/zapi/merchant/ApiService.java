@@ -299,6 +299,7 @@ public class ApiService {
     }
 
     public Result<ChargeQueryResponse> chargeQuery(String body, String sign, String appKey) {
+        log.info("body = {}", body);
         ApiContext context = new ApiContext();
         this.checkRequest(context, body, sign, appKey, "chargeQuery");
         SysUserEntity merchant = context.getMerchant();

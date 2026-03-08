@@ -74,7 +74,7 @@ public class WPay extends PostJsonChannel {
 
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchId", channelEntity.getMerchantId());
-        map.put("wayCode", channelEntity.getPayCode());
+        map.put("wayCode", entity.getPayCode());
         map.put("subject", "service");
         map.put("body", "service");
         map.put("outTradeNo", entity.getId().toString());

@@ -75,8 +75,7 @@ public class QPay extends PostJsonChannel {
 
         log.info("get payCode: {}", entity.getPayCode());
         map.put("mchId", channelEntity.getMerchantId());
-        // map.put("wayCode", "1001");
-        map.put("wayCode", channelEntity.getPayCode());
+        map.put("wayCode", entity.getPayCode());
         map.put("subject", "service");
         map.put("body", "service");
         map.put("outTradeNo", entity.getId().toString());

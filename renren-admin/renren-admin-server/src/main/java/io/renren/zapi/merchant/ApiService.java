@@ -169,8 +169,9 @@ public class ApiService {
         String signstr = body + merchant.getSecretKey();
         String calc = DigestUtil.md5Hex(signstr);
         if (!calc.equals(sign)) {
+            String msg = String.format("[only in dev], signature error, server info: sign[%s], signstr[%s], client sign[%s]", calc, signstr, sign);
+            log.error("err msg: {}", msg);
             if (merchant.getDev() == 1) {
-                String msg = String.format("[only in dev], signature error, server info: sign[%s], signstr[%s], client sign[%s]", calc, signstr, sign);
                 throw new RenException(msg);
             }
             throw new RenException("signature error");

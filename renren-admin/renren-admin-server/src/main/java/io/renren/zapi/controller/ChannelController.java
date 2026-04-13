@@ -120,14 +120,30 @@ public class ChannelController {
         channelCallbackService.doWithdraw(deptId, channelId, id, body, contentType, request, response);
     }
 
-    @PostMapping("webhook/{deptId}/{channelId}")
-    public void webhook(
-            @PathVariable("deptId") Long deptId,
-            @PathVariable("channelId") Long channelId,
+    // tmo 专用
+    @PostMapping("webhook/tmo")
+    public void tmoWebhook(
             @RequestHeader("Content-Type") String contentType,
             @RequestBody String body,
             HttpServletRequest request,
             HttpServletResponse response
+    ) {
+        Long deptId = 1L;
+        Long channelId = 2L;
+        channelCallbackService.doWebhook(deptId, channelId, contentType, body, request, response);
+    }
+
+
+    @PostMapping("webhook/{deptId}/{channelId}")
+    public void webhook(
+            @PathVariable("deptId") Long deptId,
+            @PathVariable("channelId") Long channelId,
+
+            @RequestHeader("Content-Type") String contentType,
+            @RequestBody String body,
+            HttpServletRequest request,
+            HttpServletResponse response
+
     ) {
         channelCallbackService.doWebhook(deptId, channelId, contentType, body, request, response);
     }

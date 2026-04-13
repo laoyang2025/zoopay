@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Options</title>
+    <style>
+        /* 全局样式重置 + 基础变量定义 */
+        :root {
+            --primary-color: #1a237e;
+            --secondary-color: #f5f7ff;
+            --text-color: #2d3748;
+            --light-gray: #e2e8f0;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 页面背景和主体样式 */
+        body {
+            background: linear-gradient(180deg, var(--secondary-color) 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 16px;
+        }
+
+        /* 主标题 */
+        .page-title {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        /* 副标题 */
+        .page-subtitle {
+            color: #718096;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* 支付选项容器 */
+        .payment-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            max-width: 520px;
+            margin: 0 auto;
+            flex-grow: 1;
+        }
+
+        /* 支付选项卡片样式 - 核心升级 */
+        .payment-card {
+            background: #ffffff;
+            border-radius: var(--radius-md);
+            padding: 28px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        /* 卡片hover/激活效果 */
+        .payment-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--light-gray);
+        }
+
+        /* 卡片点击波纹效果 */
+        .payment-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(26, 35, 126, 0.05);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .payment-card:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        /* 支付方式图片样式 - 优化尺寸和对齐 */
+        .payment-img {
+            max-width: 90%;
+            max-height: 90px;
+            object-fit: contain;
+            z-index: 1;
+            transition: var(--transition);
+        }
+
+        .payment-card:hover .payment-img {
+            transform: scale(1.05);
+        }
+
+        /* 底部区域 */
+        .page-footer {
+            margin-top: 48px;
+            text-align: center;
+            padding-bottom: 24px;
+        }
+
+        /* 底部提示文字 */
+        .footer-note {
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* 安全标识 */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            color: #48bb78;
+            font-size: 13px;
+        }
+
+        .security-icon {
+            font-size: 16px;
+        }
+
+        /* 响应式适配 - 精细化适配 */
+        @media (max-width: 420px) {
+            .payment-container {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .payment-img {
+                max-height: 80px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .page-header {
+                margin-bottom: 32px;
+            }
+        }
+
+        /* 深色模式适配（可选增强） */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #90caf9;
+                --secondary-color: #121212;
+                --text-color: #e0e0e0;
+                --light-gray: #2d2d2d;
+            }
+
+            body {
+                background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            }
+
+            .payment-card {
+                background: #242424;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 页面头部 -->
+<div class="page-header">
+    <h1 class="page-title">Select Payment Method</h1>
+    <p class="page-subtitle">Choose your preferred payment option to complete the transaction</p>
+</div>
+
+<!-- 支付选项容器 -->
+<div class="payment-container">
+    <!-- Paytm 支付选项 -->
+    <a href="paytm://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/paytm.png" alt="Paytm" class="payment-img">
+    </a>
+    <!-- PhonePe 支付选项 -->
+    <a href="phonepe://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/phonepe.png" alt="PhonePe" class="payment-img">
+    </a>
+    <!-- UPI 支付选项 -->
+    <a href="upi://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/upi.png" alt="UPI" class="payment-img">
+    </a>
+    <!-- Google Pay 支付选项 -->
+    <a href="gpay://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/gpay.png" alt="Google Pay" class="payment-img">
+    </a>
+</div>
+
+<!-- 页面底部 -->
+<div class="page-footer">
+    <p class="footer-note">Your payment is encrypted and secure</p>
+    <div class="security-badge">
+        <span class="security-icon">🔒</span>
+        <span>Secure Payment Gateway</span>
+    </div>
+</div>
+</body>
+</html>

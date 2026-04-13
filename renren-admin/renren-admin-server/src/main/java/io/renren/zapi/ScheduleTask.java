@@ -14,8 +14,11 @@ import io.renren.zapi.ant.AntTimeoutService;
 import io.renren.zapi.card.CardMatchService;
 import io.renren.zapi.channel.ChannelFactory;
 import io.renren.zapi.channel.PayChannel;
+import io.renren.zapi.channel.channels.TmoPay;
+import io.renren.zapi.channel.dto.ChannelChargeQueryResponse;
 import io.renren.zapi.channel.dto.ChannelWithdrawResponse;
 import io.renren.zapi.event.WithdrawCompleteEvent;
+import io.renren.zapi.merchant.ApiService;
 import io.renren.zapi.utils.CommonUtils;
 import io.renren.zsocket.SocketMessageService;
 import jakarta.annotation.Resource;
@@ -60,6 +63,31 @@ public class ScheduleTask {
     private SysUserDao sysUserDao;
     @Resource
     private ApplicationEventPublisher publisher;
+    @Resource
+    private ApiService apiService;
+
+    // @tmo
+    @Scheduled(fixedRate = 10_000)
+    public void tmoQuery() {
+
+        Long channelId = 2043240981100064770L;
+        Date tenSecondsAgo = DateUtils.addSeconds(new Date(), -10);
+        Date fourMinutesAgo = DateUtils.addMinutes(new Date(), -4);
+
+        // 4分钟前, 到10秒钟前的还在处理中的交易
+        List<ZChargeEntity> zChargeEntities = zChargeDao.selectList(Wrappers.<ZChargeEntity>lambdaQuery()
+                .eq(ZChargeEntity::getChannelId, channelId)
+                .gt(ZChargeEntity::getCreateDate, fourMinutesAgo)
+                .lt(ZChargeEntity::getCreateDate, tenSecondsAgo)
+                .eq(ZChargeEntity::getProcessStatus, ZooConstant.CHARGE_STATUS_PROCESSING)
+        );
+        log.info("tmo 需要查询订单: {}", zChargeEntities.stream().count());
+
+        // 去查回来
+        zChargeEntities.stream().forEach(zCharge -> {
+            apiService.queryChannelCharge(zCharge.getId());
+        });
+    }
 
     /**
      * 码农模式 | 代理模式: 交易超时处理
@@ -147,4 +175,5 @@ public class ScheduleTask {
             publisher.publishEvent(new WithdrawCompleteEvent(this, e.getId()));
         });
     }
+
 }

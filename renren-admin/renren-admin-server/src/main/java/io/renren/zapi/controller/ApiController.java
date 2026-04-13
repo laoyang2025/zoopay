@@ -186,8 +186,11 @@ public class ApiController {
                 upiParam = ""; // 空参数时替换为空字符串，避免模板中保留{{upi}}
             }
 
+            String realUrl = upiParam.replace("&amp;", "&");
+
+
             // 步骤3：替换模板中的{{upi}}变量
-            String finalContent = upiTemplate.replace("{{upi}}", upiParam);
+            String finalContent = upiTemplate.replace("{{upi}}", realUrl);
 
             // 步骤4：将替换后的内容写入响应
             response.getWriter().write(finalContent);

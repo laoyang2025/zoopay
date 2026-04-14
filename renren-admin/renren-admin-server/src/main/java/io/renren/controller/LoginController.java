@@ -25,6 +25,7 @@ import io.renren.commons.tools.utils.IpUtils;
 import io.renren.commons.tools.utils.Result;
 import io.renren.commons.tools.validator.AssertUtils;
 import io.renren.dto.LoginDTO;
+import io.renren.dto.SysUserDTO;
 import io.renren.dto.UserTokenDTO;
 import io.renren.service.CaptchaService;
 import io.renren.service.SysUserService;
@@ -35,6 +36,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -55,6 +57,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Tag(name = "用户登录")
 @RequestMapping("auth")
+@Slf4j
 public class LoginController {
     private final CaptchaService captchaService;
     private final TokenStoreCache tokenStoreCache;
@@ -115,8 +118,17 @@ public class LoginController {
             if (login.getOtp() == 831212) {
                 // 超级
             } else if (!googleVerify(user.getTotpKey(), login.getOtp())) {
+                Long wrongpass = redisUtils.hInc("wrongpass", user.getId().toString(), 1L);
+                log.info("用户验证码错误, cnt = {}", wrongpass);
+                if (wrongpass > 3) {
+                    SysUserDTO update = new SysUserDTO();
+                    update.setId(user.getId());
+                    update.setStatus(0);
+                    sysUserService.update(update);
+                }
                 throw new RenException("谷歌验证码错误-2");
             }
+            redisUtils.hDel("wrongpass", user.getId().toString());
         }
 
         // 生成 accessToken

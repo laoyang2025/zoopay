@@ -105,10 +105,13 @@ public class LoginController {
             throw new RenException("用户名或密码错误");
         }
 
-
         // 用户信息
         MyUserDetail user = (MyUserDetail) authentication.getPrincipal();
         Integer totpStatus = user.getTotpStatus();
+
+        if (user.getSecretKey().equals(0)) {
+            throw new RenException("你已被锁定, 请联系管理员");
+        }
 
 
         if (totpStatus != null && totpStatus == 1) {
@@ -120,11 +123,12 @@ public class LoginController {
             } else if (!googleVerify(user.getTotpKey(), login.getOtp())) {
                 Long wrongpass = redisUtils.hInc("wrongpass", user.getId().toString(), 1L);
                 log.info("用户验证码错误, cnt = {}", wrongpass);
-                if (wrongpass > 3) {
+                if (wrongpass >= 3) {
                     SysUserDTO update = new SysUserDTO();
                     update.setId(user.getId());
                     update.setStatus(0);
                     sysUserService.update(update);
+                    throw new RenException("多次验证错误, 你已被锁定");
                 }
                 throw new RenException("谷歌验证码错误-2");
             }

@@ -122,6 +122,9 @@ public class TmoPay extends PostJsonChannel {
     @Override
     public String request(String url, TreeMap<String, Object> map, String api) {
         HttpHeaders httpHeaders = getHttpHeaders();
+        if (api.equals("balance")) {
+            return this.getJSON(url, map, httpHeaders);
+        }
         return this.postJSON(url, map, httpHeaders);
     }
 
@@ -191,9 +194,6 @@ public class TmoPay extends PostJsonChannel {
      */
     @Override
     public void setBalanceMap(TreeMap<String, Object> map) {
-        ZChannelEntity channelEntity = channelEntity();
-        map.put("mchNo", channelEntity.getMerchantId());
-        map.put("appId", channelEntity.getPlatformKey());
     }
 
 
@@ -381,18 +381,31 @@ public class TmoPay extends PostJsonChannel {
     }
 
     /**
-     *
+     * {
+     * "success":true,
+     * "message":"Balance Listed Successfully",
+     * "data":{
+     *  "currentBalance":"200.00",
+     *  "totalBalance":"200.00",
+     *  "utilizedBalance":"0.00",
+     *  "freezBalance":"0.00",
+     *  "holdBalance":"0.00",
+     *  "lienBalance":"0.00",
+     *  "pendingBalance":"0.00",
+     *  "status":"Active"
+     *  }}
      */
     @Override
     public ChannelBalanceResponse doBalance(JSONObject jsonObject) {
-        int code = jsonObject.getIntValue("code");
-        if (code == 0) {
+        boolean success = jsonObject.getBooleanValue("success");
+        if (success) {
             JSONObject data = jsonObject.getJSONObject("data");
-
             ChannelBalanceResponse response = new ChannelBalanceResponse();
-            BigDecimal bal = data.getBigDecimal("balance").divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            BigDecimal bal = new BigDecimal(data.getString("totalBalance"));
             response.setBalance(bal);
-            response.setBalanceMemo(bal.toString());
+            String currbal = data.getString("currentBalance");
+            response.setBalanceMemo("total:" + bal + ", current:" + currbal.toString());
+            log.info("balance:{}, current:{}", bal, currbal);
             return response;
         }
         throw new RenException("查询余额失败");

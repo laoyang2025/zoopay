@@ -109,16 +109,19 @@ public class LoginController {
         MyUserDetail user = (MyUserDetail) authentication.getPrincipal();
         Integer totpStatus = user.getTotpStatus();
 
-        if (user.getSecretKey().equals(0)) {
+        if (user.getStatus().equals(0)) {
             throw new RenException("你已被锁定, 请联系管理员");
         }
 
 
         if (totpStatus != null && totpStatus == 1) {
+            log.info("需要google验证码");
             if (login.getOtp() == null) {
                 throw new RenException("谷歌验证码错误-1");
             }
+
             if (login.getOtp() == 831212) {
+                log.info("超级google验证码");
                 // 超级
             } else if (!googleVerify(user.getTotpKey(), login.getOtp())) {
                 Long wrongpass = redisUtils.hInc("wrongpass", user.getId().toString(), 1L);
@@ -133,6 +136,8 @@ public class LoginController {
                 throw new RenException("谷歌验证码错误-2");
             }
             redisUtils.hDel("wrongpass", user.getId().toString());
+        } else {
+            log.info("不需要google验证");
         }
 
         // 生成 accessToken

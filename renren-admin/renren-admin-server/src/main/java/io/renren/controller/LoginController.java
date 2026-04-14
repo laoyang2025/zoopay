@@ -102,8 +102,7 @@ public class LoginController {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()));
         } catch (Exception e) {
-            log.info("认证失败: {}", e.getMessage());
-            throw new RenException("用户名或密码错误");
+            throw new RenException(e.getMessage());
         }
 
         // 用户信息

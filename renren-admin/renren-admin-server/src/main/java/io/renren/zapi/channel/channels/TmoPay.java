@@ -257,6 +257,10 @@ public class TmoPay extends PostJsonChannel {
 
             HttpHeaders httpHeaders = new HttpHeaders();
 
+            if (false) {
+                throw new RenException("故意错误");
+            }
+
             String qrcode = null;
             boolean isDev = getContext().getConfig().isDev();
             if (isDev) {

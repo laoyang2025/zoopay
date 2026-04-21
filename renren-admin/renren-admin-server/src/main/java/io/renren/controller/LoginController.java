@@ -109,11 +109,6 @@ public class LoginController {
         MyUserDetail user = (MyUserDetail) authentication.getPrincipal();
         Integer totpStatus = user.getTotpStatus();
 
-        if (user.getStatus().equals(0)) {
-            throw new RenException("你已被锁定, 请联系管理员");
-        }
-
-
         if (totpStatus != null && totpStatus == 1) {
             log.info("需要google验证码");
             if (login.getOtp() == null) {

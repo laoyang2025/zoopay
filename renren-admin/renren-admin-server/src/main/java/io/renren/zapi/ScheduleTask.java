@@ -83,7 +83,10 @@ public class ScheduleTask {
                 .lt(ZChargeEntity::getCreateDate, tenSecondsAgo)
                 .eq(ZChargeEntity::getProcessStatus, ZooConstant.CHARGE_STATUS_PROCESSING)
         );
-        log.info("tmo 需要查询订单: {}", zChargeEntities.stream().count());
+        long count = zChargeEntities.stream().count();
+        if (count > 0) {
+            log.info("tmo 需要查询订单: {}", zChargeEntities.stream().count());
+        }
 
         // 去查回来
         zChargeEntities.stream().forEach(zCharge -> {

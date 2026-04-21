@@ -2,7 +2,6 @@ package io.renren.zapi.channel.channels;
 
 
 import cn.hutool.core.lang.Pair;
-import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.google.common.util.concurrent.RateLimiter;
 import io.renren.commons.tools.exception.RenException;

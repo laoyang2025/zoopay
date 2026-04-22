@@ -285,9 +285,9 @@ public class TmoPay extends PostJsonChannel {
                 // 你的 UPI 链接
 
                 // 正则表达式：匹配 pa= 后面直到 & 或结尾的内容
-                String regex = "pa=([^&]+)";
+                String regex = "pa=([^&]+)&";
                 Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(payUrl);
+                Matcher matcher = pattern.matcher(qrcodeRaw);
                 if (matcher.find()) {
                     // 提取分组1的值
                     String paValue = matcher.group(1);

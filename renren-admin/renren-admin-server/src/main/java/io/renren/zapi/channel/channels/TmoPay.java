@@ -169,7 +169,7 @@ public class TmoPay extends PostJsonChannel {
         map.put("name", "Raj Kub");
         map.put("mobileNumber", "9207281258");
         map.put("email", "hgvkknb@gmail.com");
-        map.put("amount", entity.getAmount());
+        map.put("amount", entity.getAmount().longValue());
         map.put("remarks", "Payin");
         map.put("hash", generateHash(channelEntity.getMerchantId(), map, null, channelEntity.getPrivateKey()));
     }

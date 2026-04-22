@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +18,7 @@
             --radius-sm: 8px;
             --radius-md: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --danger-color: #dc2626; /* 新增危险色变量 */
         }
 
         * {
@@ -33,6 +35,30 @@
             padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
             display: flex;
             flex-direction: column;
+        }
+
+        /* 新增：倒计时容器样式 */
+        .countdown-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(26, 35, 126, 0.03);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--light-gray);
+        }
+
+        .countdown-title {
+            color: var(--danger-color);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .countdown-timer {
+            color: var(--primary-color);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
 
         /* 页面头部 */
@@ -155,6 +181,57 @@
             font-size: 16px;
         }
 
+        /* 新增：超时界面样式 */
+        .timeout-container {
+            max-width: 520px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 60px 20px;
+            flex-grow: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeout-icon {
+            font-size: 72px;
+            color: var(--danger-color);
+            margin-bottom: 24px;
+        }
+
+        .timeout-title {
+            color: var(--danger-color);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .timeout-message {
+            color: #718096;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            max-width: 400px;
+        }
+
+        .timeout-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .timeout-button:hover {
+            background: #283593;
+            transform: translateY(-2px);
+        }
+
         /* 响应式适配 - 精细化适配 */
         @media (max-width: 420px) {
             .payment-container {
@@ -173,6 +250,18 @@
             .page-header {
                 margin-bottom: 32px;
             }
+
+            .countdown-timer {
+                font-size: 18px;
+            }
+
+            .timeout-title {
+                font-size: 26px;
+            }
+
+            .timeout-message {
+                font-size: 16px;
+            }
         }
 
         /* 深色模式适配（可选增强） */
@@ -182,6 +271,7 @@
                 --secondary-color: #121212;
                 --text-color: #e0e0e0;
                 --light-gray: #2d2d2d;
+                --danger-color: #f87171;
             }
 
             body {
@@ -191,18 +281,41 @@
             .payment-card {
                 background: #242424;
             }
+
+            .countdown-container {
+                background: rgba(144, 202, 249, 0.05);
+            }
+
+            .timeout-container {
+                background: transparent;
+            }
+
+            .timeout-button {
+                background: #64b5f6;
+                color: #0d47a1;
+            }
+
+            .timeout-button:hover {
+                background: #90caf9;
+            }
         }
     </style>
 </head>
 <body>
+<!-- 新增：倒计时区域（放在页面最顶部） -->
+<div class="countdown-container">
+    <p class="countdown-title">Payment Session Expires In</p>
+    <div id="countdown-timer" class="countdown-timer">04:00</div>
+</div>
+
 <!-- 页面头部 -->
 <div class="page-header">
     <h1 class="page-title">Select Payment Method</h1>
     <p class="page-subtitle">Choose your preferred payment option to complete the transaction</p>
 </div>
 
-<!-- 支付选项容器 -->
-<div class="payment-container">
+<!-- 支付选项容器（添加id用于超时隐藏） -->
+<div id="payment-container" class="payment-container">
     <!-- Paytm 支付选项 -->
     <a href="paytm://{{upi}}" target="_blank" class="payment-card">
         <img src="/sys/images/paytm.png" alt="Paytm" class="payment-img">
@@ -221,13 +334,78 @@
     </a>
 </div>
 
-<!-- 页面底部 -->
-<div class="page-footer">
+<!-- 新增：超时界面 -->
+<div id="timeout-container" class="timeout-container">
+    <div class="timeout-icon">⏱️</div>
+    <h2 class="timeout-title">Session Expired</h2>
+    <p class="timeout-message">Your payment session has expired. Please restart the payment process to continue.</p>
+    <button class="timeout-button" onclick="location.reload()">Restart Payment</button>
+</div>
+
+<!-- 页面底部（添加id用于超时隐藏） -->
+<div id="page-footer" class="page-footer">
     <p class="footer-note">Your payment is encrypted and secure</p>
     <div class="security-badge">
         <span class="security-icon">🔒</span>
         <span>Secure Payment Gateway</span>
     </div>
 </div>
+
+<!-- 新增：倒计时核心JS逻辑 -->
+<script>
+    // 设置倒计时时间（4分钟 = 240秒）
+    let countdownTime = 4 * 60;
+    const timerElement = document.getElementById('countdown-timer');
+    const paymentContainer = document.getElementById('payment-container');
+    const pageFooter = document.getElementById('page-footer');
+    const timeoutContainer = document.getElementById('timeout-container');
+    const countdownContainer = document.querySelector('.countdown-container');
+    const pageHeader = document.querySelector('.page-header');
+
+    // 更新倒计时显示
+    function updateCountdown() {
+        const minutes = Math.floor(countdownTime / 60);
+        const seconds = countdownTime % 60;
+
+        // 格式化显示（补零）
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+
+        timerElement.textContent = `${formattedMinutes}:${formattedSeconds}`;
+
+        // 倒计时结束
+        if (countdownTime <= 0) {
+            clearInterval(countdownInterval);
+            showTimeoutScreen();
+            return;
+        }
+
+        // 剩余1分钟时改变文字颜色为红色
+        if (countdownTime <= 60) {
+            timerElement.style.color = '#dc2626'; // 直接用色值，避免变量引用问题
+            timerElement.style.fontWeight = '800';
+        }
+
+        countdownTime--;
+    }
+
+    // 显示超时界面
+    function showTimeoutScreen() {
+        // 隐藏原有内容
+        countdownContainer.style.display = 'none';
+        pageHeader.style.display = 'none';
+        paymentContainer.style.display = 'none';
+        pageFooter.style.display = 'none';
+
+        // 显示超时界面
+        timeoutContainer.style.display = 'flex';
+    }
+
+    // 启动倒计时（每秒更新一次）
+    const countdownInterval = setInterval(updateCountdown, 1000);
+
+    // 初始调用一次更新显示
+    updateCountdown();
+</script>
 </body>
 </html>

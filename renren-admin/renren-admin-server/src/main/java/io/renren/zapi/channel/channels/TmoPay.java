@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 // beck机构
@@ -278,9 +280,26 @@ public class TmoPay extends PostJsonChannel {
                 payurl = "https://novo.txzfpay.top/sys/zapi/upi?upi=" + encodedInnerUrl;
             }
             if (StringUtils.isNotEmpty(payUrl)) {
+
+                // "upi://pay?pa=65136080@fbl&pn=MAHINSHA%20T%20S&mc=5499&mode=22&orgid=000000&mid=606810090037772&mtid=65136080&tid=FBLPG2942103L3LBKAXNJ81MYT65136080B&tr=FBLPG2942103L3LBKAXNJ81MYT65136080B&am=200.0"
+                // 你的 UPI 链接
+
+                // 正则表达式：匹配 pa= 后面直到 & 或结尾的内容
+                String regex = "pa=([^&]+)";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(payUrl);
+                if (matcher.find()) {
+                    // 提取分组1的值
+                    String paValue = matcher.group(1);
+                    response.setUpi(paValue);
+                    System.out.println("pa 对应的值：" + paValue);
+                } else {
+                    System.out.println("未匹配到 pa 值");
+                    throw new RenException("未能匹配upi");
+                }
+
                 response.setChannelOrder(sn);
                 response.setPayUrl(payurl);
-                response.setUpi(null);
                 response.setRaw(qrcodeRaw);
                 return response;
             }
@@ -344,6 +363,7 @@ public class TmoPay extends PostJsonChannel {
 
             String status = data.getString("updatedStatus");
             if (status.equals("Success")) {
+                response.setUtr(data.getString("utrId"));
                 response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
             } else {
                 response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);

@@ -2,8 +2,10 @@ package io.renren.zapi.channel.channels;
 
 
 import cn.hutool.core.lang.Pair;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson2.JSONObject;
 import io.renren.commons.tools.exception.RenException;
+import io.renren.zadmin.entity.ZChannelEntity;
 import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zadmin.entity.ZWithdrawEntity;
 import io.renren.zapi.ZooConstant;
@@ -22,8 +24,12 @@ import java.util.TreeMap;
 
 // mumbai的 制作代付
 @Slf4j
-public class RmPay extends PostJsonChannel {
+public class RmPay extends PostFormChannel {
 
+    @Override
+    public String signField() {
+        return "pay_md5sign";
+    }
 
     /**
      * 必须要计算签名
@@ -32,7 +38,13 @@ public class RmPay extends PostJsonChannel {
      */
     @Override
     public Pair<String, String> getSign(TreeMap<String, Object> map, String api) {
-        return null;
+        ZChannelEntity channelEntity = channelEntity();
+        // String signStr = this.md5SignString(map, false) + "&key=" + channelEntity.getPrivateKey();
+        String signStr = this.md5SignString(map, false) + "&key=" + channelEntity.getPrivateKey();
+        String sign = DigestUtil.md5Hex(signStr).toUpperCase();
+        log.info("signStr = {}", signStr);
+        log.info("sign = {}", sign);
+        return Pair.of(signStr, sign);
     }
 
     @Override
@@ -45,47 +57,44 @@ public class RmPay extends PostJsonChannel {
         throw new RenException("渠道不支持收款查询");
     }
 
+
     @Override
     public void setBalanceMap(TreeMap<String, Object> map) {
-        map.put("clientId", getContext().getChannelEntity().getPrivateKey());
-        map.put("secretKey", getContext().getChannelEntity().getPublicKey());
+        map.put("pay_memberid", getContext().getChannelEntity().getMerchantId());
     }
 
     @Override
     public void setWithdrawQueryMap(ZWithdrawEntity entity, TreeMap<String, Object> map) {
-        map.put("clientId", getContext().getChannelEntity().getPrivateKey());
-        map.put("secretKey", getContext().getChannelEntity().getPublicKey());
-        map.put("clientOrderId", entity.getId().toString());
+        map.put("mchid", getContext().getChannelEntity().getMerchantId());
+        map.put("out_trade_no", entity.getId().toString());
     }
 
 
     /**
-     * "number": "Mobile Number"
-     * "amount": "Txn Amount",
-     * "transferMode":"IMPS",
-     * "accourntNo": "Account Number",
-     * "ifscCode":" ifscCode",
-     * "beneficlaryName":BENENAME'
-     * "vpa":"",
-     * clientOrderId ": " Unigue Client Transaction Reference Number"
-     *
+     * mchid	Merchant ID	Yes	Yes	Merchant ID assigned by the platform
+     * out_trade_no	Merchant Order No.	Yes	Yes	Must be unique
+     * money	Order Amount	Yes	Yes	Unit: Yuan
+     * bankcode	IFSC CODE	Yes	Yes
+     * bankname	Bank Name	Yes	Yes
+     * accountname	Account Holder Name	Yes	Yes
+     * cardnumber	Bank Card Number	Yes	Yes
+     * notifyurl	Callback URL	Yes	Yes
+     * pay_md5sign	MD5 Signature	Yes	No
      * @param entity
      * @param map
      */
+
     @Override
     public void setWithdrawMap(ZWithdrawEntity entity, TreeMap<String, Object> map) {
-        map.put("clientId", getContext().getChannelEntity().getPrivateKey());
-        map.put("secretKey", getContext().getChannelEntity().getPublicKey());
-
-        map.put("number", "9821709914");
-        map.put("amount", entity.getAmount().toString());
-        map.put("transferMode", "IMPS");
-        map.put("paymentMode", "5");
-        map.put("accountNo", entity.getAccountNo());
-        map.put("ifscCode", entity.getAccountIfsc());
-        map.put("beneficiaryName", entity.getAccountUser());
-        map.put("vpa", "");
-        map.put("clientOrderId", entity.getId().toString());
+        ZChannelEntity channelEntity = channelEntity();
+        map.put("mchid", channelEntity.getMerchantId());
+        map.put("out_trade_no", entity.getId().toString());
+        map.put("money", entity.getAmount());
+        map.put("bankcode", entity.getAccountIfsc());
+        map.put("bankname", entity.getAccountBank());
+        map.put("accountname", entity.getAccountUser());
+        map.put("cardnumber", entity.getAccountNo());
+        map.put("notifyurl", this.getWithdrawNotifyUrl(entity));
     }
 
 
@@ -94,19 +103,24 @@ public class RmPay extends PostJsonChannel {
         throw new RenException("渠道不支持收款");
     }
 
+    /**
+     * status	        Status	Yes	Yes	success: success, error: failure (does not mean business success)
+     * msg	            Status Description	Yes	Yes
+     * transaction_id	Platform Transaction ID	Yes	Yes	Returned when successfu
+     */
 
     @Override
     public ChannelWithdrawResponse doWithdraw(JSONObject jsonObject) {
         ChannelWithdrawResponse response = new ChannelWithdrawResponse();
-        int statusCode = jsonObject.getIntValue("statusCode");
-        if (statusCode == 1) {
+        String status = jsonObject.getString("status");
+        if (status.equals("success")) {
             response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
-            response.setChannelOrder(jsonObject.getString("orderId"));
+            response.setChannelOrder(jsonObject.getString("transaction_id"));
             response.setError(null);
             return response;
         } else {
-            if (jsonObject.getString("message") != null) {
-                throw new RenException("渠道错误:" + jsonObject.getString("message"));
+            if (jsonObject.getString("msg") != null) {
+                throw new RenException("渠道错误:" + jsonObject.getString("msg"));
             }
             throw new RenException("渠道错误:未知错误");
         }
@@ -118,13 +132,12 @@ public class RmPay extends PostJsonChannel {
         throw new RenException("渠道不支持收款查询");
     }
 
+
     @Override
     public ChannelWithdrawResponse doWithdrawQuery(JSONObject jsonObject) {
         ChannelWithdrawResponse response = new ChannelWithdrawResponse();
-        int status = jsonObject.getIntValue("status");
-        if (status == 1) {
-            String utr = jsonObject.getString("utr");
-            response.setUtr(utr);
+        String status = jsonObject.getString("status");
+        if (status.equals("success")) {
             response.setStatus(ZooConstant.WITHDRAW_STATUS_SUCCESS);
         } else {
             response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);

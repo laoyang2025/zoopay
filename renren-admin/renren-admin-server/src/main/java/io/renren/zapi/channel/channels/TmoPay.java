@@ -261,14 +261,14 @@ public class TmoPay extends PostJsonChannel {
                 throw new RenException("故意错误");
             }
 
-            String qrcode = null;
+            String qrcodeRaw = null;
             boolean isDev = getContext().getConfig().isDev();
             if (isDev) {
-                qrcode = this.getJSON("http://95.40.84.151:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
+                qrcodeRaw = this.getJSON("http://95.40.84.151:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             } else {
-                qrcode = this.getJSON("http://127.0.0.1:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
+                qrcodeRaw = this.getJSON("http://127.0.0.1:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             }
-            qrcode = qrcode.substring(7);
+            String qrcode = qrcodeRaw.substring(7);
 
             String encodedInnerUrl = URLEncoder.encode(qrcode, StandardCharsets.UTF_8);
             String payurl = null;
@@ -281,7 +281,7 @@ public class TmoPay extends PostJsonChannel {
                 response.setChannelOrder(sn);
                 response.setPayUrl(payurl);
                 response.setUpi(null);
-                response.setRaw(null);
+                response.setRaw(qrcodeRaw);
                 return response;
             }
 

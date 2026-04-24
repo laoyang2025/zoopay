@@ -189,7 +189,7 @@ public class CxyPay extends PostFormChannel {
      */
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
-        log.info("get response: {}", jsonObject);
+        // log.info("get response: {}", jsonObject);
         if (jsonObject.getString("rescode").equals("00")) {
             ChannelChargeResponse response = new ChannelChargeResponse();
             String payUrl = jsonObject.getString("payUrl");

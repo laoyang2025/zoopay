@@ -426,9 +426,13 @@ public interface PayChannel {
         } catch (JsonProcessingException ex) {
             throw new RenException("invalid request");
         }
-        getContext().info("send: to      {}", url);
-        getContext().info("send: headers {}", headers);
-        getContext().info("send: body    {}", bodyStr);
+
+        if (false) {
+            getContext().info("send: to      {}", url);
+            getContext().info("send: headers {}", headers);
+            getContext().info("send: body    {}", bodyStr);
+        }
+
         ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
         String body = stringResponseEntity.getBody();
         getContext().info("recv: {}", body);

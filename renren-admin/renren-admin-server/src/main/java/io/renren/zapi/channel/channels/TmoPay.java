@@ -256,12 +256,13 @@ public class TmoPay extends PostJsonChannel {
             String sn = data.getString("paymentReferenceNo");
 
             // 请求本地playright服务
-
+            log.info("payUrl: {}", payUrl);
             HttpHeaders httpHeaders = new HttpHeaders();
 
             if (false) {
                 throw new RenException("故意错误");
             }
+
 
             String qrcodeRaw = null;
             boolean isDev = getContext().getConfig().isDev();
@@ -279,6 +280,7 @@ public class TmoPay extends PostJsonChannel {
             } else {
                 payurl = "https://novo.txzfpay.top/sys/zapi/upi?upi=" + encodedInnerUrl;
             }
+
             if (StringUtils.isNotEmpty(payUrl)) {
 
                 // "upi://pay?pa=65136080@fbl&pn=MAHINSHA%20T%20S&mc=5499&mode=22&orgid=000000&mid=606810090037772&mtid=65136080&tid=FBLPG2942103L3LBKAXNJ81MYT65136080B&tr=FBLPG2942103L3LBKAXNJ81MYT65136080B&am=200.0"

@@ -165,7 +165,6 @@ abstract public class AbstractChannel implements PayChannel {
         }
 
         // 请求
-        log.info("请求: {}", channelEntity().getChargeQueryUrl());
         String resp = this.request(channelEntity().getChargeQueryUrl(), map, "chargeQuery");
 
         // 处理返回结果

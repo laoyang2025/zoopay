@@ -267,10 +267,9 @@ public class TmoPay extends PostJsonChannel {
             String qrcodeRaw = null;
             boolean isDev = getContext().getConfig().isDev();
             if (isDev) {
-                // qrcodeRaw = this.getJSON("http://95.40.84.151:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
                 qrcodeRaw = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             } else {
-                qrcodeRaw = this.getJSON("http://127.0.0.1:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
+                qrcodeRaw = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             }
             String qrcode = qrcodeRaw.substring(7);
 

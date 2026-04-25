@@ -151,7 +151,10 @@ abstract public class AbstractChannel implements PayChannel {
             String qrcode = this.doChargeAsync(channelChargeResponse, entity.getId());
             String idStr = entity.getId().toString();
             redisUtils.leftPush(idStr.toString(), qrcode);
-            redisUtils.expire(idStr, 15);
+            redisUtils.expire(idStr, 30);
+            redisUtils.set(idStr.toString() + "-k", qrcode);
+            redisUtils.expire(idStr + "-k", 60);
+
             // 更新订单号
             if (channelChargeResponse.getChannelOrder() != null) {
                 log.info("更新渠道单号{}:{}", entity.getId(), channelChargeResponse.getChannelOrder());

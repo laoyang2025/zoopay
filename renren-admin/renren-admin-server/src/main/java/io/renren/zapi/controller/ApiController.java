@@ -1,8 +1,11 @@
 package io.renren.zapi.controller;
 
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.renren.commons.tools.redis.RedisUtils;
 import io.renren.commons.tools.utils.Result;
+import io.renren.zadmin.dao.ZChargeDao;
+import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zapi.agent.AgentTimeoutService;
 import io.renren.zapi.merchant.ApiService;
 import io.renren.zapi.merchant.dto.*;
@@ -242,6 +245,28 @@ public class ApiController {
     @GetMapping("qrcode")
     public String qrcode(String id, String channel) {
         String o = (String)redisUtils.rightPop(id, 15);
-        return o;
+        if (o != null) {
+            return o;
+        }
+
+        String o1 = (String)redisUtils.get(id + "-k");
+        if (o1 != null) {
+            return o1;
+        }
+
+        return null;
     }
+
+    // 同步更新渠道定单号
+    @Resource
+    private ZChargeDao zChargeDao;
+    @GetMapping("report/channel")
+    public String reportChannelOrder(@RequestParam("channelOrder") String channelOrder, @RequestParam("id") Long id) {
+        zChargeDao.update(Wrappers.<ZChargeEntity>lambdaUpdate()
+                .eq(ZChargeEntity::getId, id)
+                .set(ZChargeEntity::getChannelOrder, channelOrder)
+        );
+        return "ok";
+    }
+
 }

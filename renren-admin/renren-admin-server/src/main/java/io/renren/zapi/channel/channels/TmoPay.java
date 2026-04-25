@@ -285,12 +285,14 @@ public class TmoPay extends PostJsonChannel {
             response.setRaw(qrcode);
             response.setUpi(upi);
 
+            String encodedUrl = URLEncoder.encode(qrcode, Charset.forName("UTF-8"));
+
             // 同步产品才用得到
             String finalPayUrl = null;
             if (isDev) {
-                finalPayUrl = "http://127.0.0.1:7001/sys/landing/sync.html?upi=" + qrcode;
+                finalPayUrl = "http://127.0.0.1:7001/sys/landing/sync.html?upi=" + encodedUrl;
             } else {
-                finalPayUrl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + qrcode;
+                finalPayUrl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + encodedUrl;
             }
             response.setPayUrl(finalPayUrl);
 

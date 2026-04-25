@@ -3,19 +3,23 @@ package io.renren.zapi.channel.channels;
 import cn.hutool.core.lang.Pair;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.renren.commons.tools.exception.RenException;
+import io.renren.commons.tools.redis.RedisUtils;
 import io.renren.entity.SysUserEntity;
+import io.renren.zadmin.dao.ZChargeDao;
+import io.renren.zadmin.entity.ZChannelEntity;
 import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zadmin.entity.ZWithdrawEntity;
 import io.renren.zapi.ZooConstant;
 import io.renren.zapi.channel.PayChannel;
 import io.renren.zapi.channel.dto.*;
-import io.renren.zapi.merchant.ApiContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 abstract public class AbstractChannel implements PayChannel {
@@ -90,36 +94,94 @@ abstract public class AbstractChannel implements PayChannel {
         this.context = context;
     }
 
-    @Override
-    public ChannelChargeResponse charge(ZChargeEntity entity) {
+    //
+    public ChannelChargeResponse syncCharge(ZChargeEntity entity) {
+        //////////////////////////////////////////////
+        // 同步处理
+        //////////////////////////////////////////////
         // 填充map
         TreeMap<String, Object> map = new TreeMap<>();
         setChargeMap(entity, map);
-
         // 计算并填充签名:  如果getSign返回不为空才需要
         Pair<String, String> sign = getSign(map, API_CHARGE);
         if (sign != null) {
             map.put(signField(), sign.getValue());
         }
+        ZChannelEntity channelEntity = channelEntity();
 
-        // 提交服务器
-        String resp = this.request(channelEntity().getChargeUrl(), map, "charge");
-
-        // 处理结果
+        log.info("球球:{}", channelEntity.getChargeUrl());
         try {
+            // 提交服务器
+            String resp = this.request(channelEntity.getChargeUrl(), map, "charge");
+            log.info("收到: {}", resp);
             // 拿到服务器结果
             JSONObject jsonObject = JSON.parseObject(resp);
+            log.info("收到渠道:{}", jsonObject);
             ChannelChargeResponse response = doCharge(jsonObject);
-            if (response.getError() != null && sign != null ) {
+            if (response.getError() != null && sign != null) {
                 getContext().error("signstr: {} | sign: {}", sign.getKey(), sign.getValue());
             }
             return response;
         } catch (Exception ex) {
+            log.info(ex.getMessage());
             if (sign != null) {
                 getContext().error("signstr: {} | sign: {}", sign.getKey(), sign.getValue());
             }
             throw ex;
         }
+
+    }
+
+
+    @Override
+    public ChannelChargeResponse charge(ZChargeEntity entity) {
+
+        // 异步处理
+        if (isAsync()) {
+            ZChargeEntity current = getContext().getCurrentChargeEntity();
+
+            boolean isDev = getContext().getConfig().isDev();
+
+            String payurl = null;
+            if (isDev) {
+                payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + current.getId();
+            } else {
+                payurl = "https://novo.txzfpay.top/sys/landing/async?channel=tmo&id=" + current.getId();
+            }
+
+            ChannelChargeResponse response = new ChannelChargeResponse();
+            response.setPayUrl(payurl);
+
+            RedisUtils redisUtils = getContext().getRedisUtils();
+            ZChargeDao chargeDao = getContext().getChargeDao();
+
+            // 异步处理
+            CompletableFuture.runAsync(() -> {
+                ChannelChargeResponse channelChargeResponse = this.syncCharge(entity);
+                String qrcode = this.doChargeAsync(channelChargeResponse, entity.getId());
+                String idStr = entity.getId().toString();
+                redisUtils.leftPush(idStr.toString(), qrcode);
+                redisUtils.expire(idStr, 15);
+
+                // 更新订单号
+                if (channelChargeResponse.getChannelOrder() != null) {
+                    log.info("更新渠道单号{}:{}", entity.getId(), channelChargeResponse.getChannelOrder());
+                    chargeDao.update(
+                            Wrappers.<ZChargeEntity>lambdaUpdate()
+                                    .eq(ZChargeEntity::getId, entity.getId())
+                                    .set(ZChargeEntity::getChannelOrder, channelChargeResponse.getChannelOrder())
+                    );
+                }
+            });
+
+            // 返回
+            return response;
+        }
+
+        //
+        return syncCharge(entity);
+
+
     }
 
     @Override
@@ -156,7 +218,13 @@ abstract public class AbstractChannel implements PayChannel {
     public ChannelChargeQueryResponse chargeQuery(ZChargeEntity entity) {
         // 填充map
         TreeMap<String, Object> map = new TreeMap<>();
-        setChargeQueryMap(entity, map);
+        try {
+            setChargeQueryMap(entity, map);
+        } catch (Exception e) {
+            ChannelChargeQueryResponse queryResponse = new ChannelChargeQueryResponse();
+            queryResponse.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
+            return queryResponse;
+        }
 
         // 签名
         Pair<String, String> pair = getSign(map, API_CHARGE_QUERY);

@@ -12,5 +12,9 @@ public class ResourceWebConfig implements WebMvcConfigurer {
         // 访问路径：/images/xxx.png → 映射到 resources/images/ 下的文件
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/images/");
+
+        registry.addResourceHandler("/landing/**")
+                .addResourceLocations("classpath:/landing/");
+
     }
 }

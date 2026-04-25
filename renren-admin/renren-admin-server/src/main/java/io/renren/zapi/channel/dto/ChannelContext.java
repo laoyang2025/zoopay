@@ -9,6 +9,7 @@ import io.renren.zadmin.dao.ZChannelDao;
 import io.renren.zadmin.dao.ZChargeDao;
 import io.renren.zadmin.dao.ZWithdrawDao;
 import io.renren.zadmin.entity.ZChannelEntity;
+import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zapi.ZConfig;
 import io.renren.zapi.ledger.ZLedger;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,7 @@ public class ChannelContext {
     private Logger logger;
     private SysDeptEntity dept;
     private RedisUtils redisUtils;
+    private ZChargeEntity currentChargeEntity;
 
     public void error(String format, Object arg) {
         logger.error(format, arg);

@@ -5,10 +5,12 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.renren.commons.tools.exception.RenException;
 import io.renren.commons.tools.redis.RedisUtils;
+import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zapi.ZConfig;
 import io.renren.zapi.ledger.ZLedger;
 import io.renren.zapi.channel.channels.LocalChannel;
 import io.renren.zapi.channel.dto.ChannelContext;
+import io.renren.zapi.merchant.ApiContext;
 import io.renren.zapi.route.RouteService;
 import io.renren.zapi.utils.CommonUtils;
 import io.renren.zadmin.dao.ZChannelDao;
@@ -49,6 +51,12 @@ public class ChannelFactory {
     private PayChannel createChannel(ZChannelEntity channelEntity) {
         Logger logger = CommonUtils.getLogger(channelEntity.getDeptName() + ".channel." + channelEntity.getChannelLabel());
 
+
+        ZChargeEntity current = null;
+        if (ApiContext.getContext() != null) {
+            current = ApiContext.getContext().getChargeEntity();
+        }
+
         // 准备渠道上下文
         ChannelContext context = new ChannelContext(
                 channelEntity,
@@ -61,7 +69,8 @@ public class ChannelFactory {
                 channelDao,
                 logger,
                 routeService.getDept(channelEntity.getDeptId()),
-                redisUtils
+                redisUtils,
+                current
         );
         try {
             if (channelEntity.getChannelName().equals("LocalChannel")) {

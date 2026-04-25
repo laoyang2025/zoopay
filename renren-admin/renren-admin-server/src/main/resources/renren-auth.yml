@@ -19,3 +19,4 @@ ignore_urls:
   - /zupload/files/**
   - /test/**
   - /images/**
+  - /landing/**

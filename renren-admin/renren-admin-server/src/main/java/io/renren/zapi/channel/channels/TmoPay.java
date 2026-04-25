@@ -2,8 +2,10 @@ package io.renren.zapi.channel.channels;
 
 
 import cn.hutool.core.lang.Pair;
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import io.renren.commons.tools.exception.RenException;
+import io.renren.commons.tools.redis.RedisUtils;
 import io.renren.zadmin.entity.ZChannelEntity;
 import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zadmin.entity.ZWithdrawEntity;
@@ -30,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,10 +43,11 @@ public class TmoPay extends PostJsonChannel {
 
     /**
      * 对应 JavaScript 的 generateHash 函数
-     * @param mid 初始字符串
-     * @param parameters 参数Map（会排除key为hash的项）
+     *
+     * @param mid           初始字符串
+     * @param parameters    参数Map（会排除key为hash的项）
      * @param hashingMethod 哈希算法（默认sha512）
-     * @param secretKey 密钥
+     * @param secretKey     密钥
      * @return 小写十六进制哈希字符串，为空则返回null
      */
     public static String generateHash(String mid, Map<String, Object> parameters, String hashingMethod, String secretKey) {
@@ -97,10 +101,11 @@ public class TmoPay extends PostJsonChannel {
 
     /**
      * {
-     *   "merchantID": "merchantID",
-     *   "secretkey": "secretkey",
-     *   "Content-Type": "application/json"
+     * "merchantID": "merchantID",
+     * "secretkey": "secretkey",
+     * "Content-Type": "application/json"
      * }
+     *
      * @return
      */
 
@@ -152,22 +157,21 @@ public class TmoPay extends PostJsonChannel {
 
     /**
      * {
-     *   "name": "Test Name",
-     *   "mobileNumber": "8899897654",
-     *   "email": "testmeail@yopmail.com",
-     *   "amount": 10,
-     *   "remarks": "Payin",
-     *   "hash": "Generated Hash Function"
+     * "name": "Test Name",
+     * "mobileNumber": "8899897654",
+     * "email": "testmeail@yopmail.com",
+     * "amount": 10,
+     * "remarks": "Payin",
+     * "hash": "Generated Hash Function"
      * }
+     *
      * @param entity
      * @param map
      */
     @Override
     public void setChargeMap(ZChargeEntity entity, TreeMap<String, Object> map) {
         ZChannelEntity channelEntity = channelEntity();
-
         log.info("get payCode: {}", entity.getPayCode());
-
         map.put("name", "Raj Kub");
         map.put("mobileNumber", "9207281258");
         map.put("email", "hgvkknb@gmail.com");
@@ -178,15 +182,19 @@ public class TmoPay extends PostJsonChannel {
 
     /**
      * {
-     *   "paymentReferenceNo": "TMO217746382840338056",
-     *   "hash": "Generated Hash Function"
+     * "paymentReferenceNo": "TMO217746382840338056",
+     * "hash": "Generated Hash Function"
      * }
+     *
      * @param entity
      * @param map
      */
     @Override
     public void setChargeQueryMap(ZChargeEntity entity, TreeMap<String, Object> map) {
         ZChannelEntity channelEntity = channelEntity();
+        if (entity.getChannelOrder() == null) {
+            throw new RenException("order error");
+        }
         map.put("paymentReferenceNo", entity.getChannelOrder());
         map.put("hash", generateHash(channelEntity.getMerchantId(), map, null, channelEntity.getPrivateKey()));
     }
@@ -197,9 +205,6 @@ public class TmoPay extends PostJsonChannel {
     @Override
     public void setBalanceMap(TreeMap<String, Object> map) {
     }
-
-
-
 
     /**
      *
@@ -220,25 +225,24 @@ public class TmoPay extends PostJsonChannel {
     }
 
     /**
-     *
      * {
      * "success":true,
      * "message":"Payment created successfully",
      * "data":{
-     *     "amount":"100.00",
-     *     "charges":"0.00",
-     *     "total":"100.00",
-     *     "clientRefNo":"TANS525520260413",
-     *     "paymentReferenceNo": "TMO1417760622197949769",
-     *     "paymentLink":"https://payment.tmonion.com/upi/TMOP0015/TMO1417760622197949769/payment",
-     *     "initialStatus":"Initiated",
-     *     "updatedStatus":"Initiated",
-     *     "paymentMode":"UPI",
-     *     "remarks":"Payin",
-     *     "createdAt":"2026-04-13T06:36:59.799Z",
-     *     "beneficiaryName":"Raj Kub",
-     *     "beneficiaryPhoneNo":"9207281258",
-     *     "beneficiaryEmail":"hgvkknb@gmail.com"
+     * "amount":"100.00",
+     * "charges":"0.00",
+     * "total":"100.00",
+     * "clientRefNo":"TANS525520260413",
+     * "paymentReferenceNo": "TMO1417760622197949769",
+     * "paymentLink":"https://payment.tmonion.com/upi/TMOP0015/TMO1417760622197949769/payment",
+     * "initialStatus":"Initiated",
+     * "updatedStatus":"Initiated",
+     * "paymentMode":"UPI",
+     * "remarks":"Payin",
+     * "createdAt":"2026-04-13T06:36:59.799Z",
+     * "beneficiaryName":"Raj Kub",
+     * "beneficiaryPhoneNo":"9207281258",
+     * "beneficiaryEmail":"hgvkknb@gmail.com"
      * }
      * }
      *
@@ -247,7 +251,6 @@ public class TmoPay extends PostJsonChannel {
      */
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
-        log.info("get response: {}", jsonObject);
         if (jsonObject.getBoolean("success")) {
             JSONObject data = jsonObject.getJSONObject("data");
 
@@ -255,228 +258,206 @@ public class TmoPay extends PostJsonChannel {
             String payUrl = data.getString("paymentLink");
             String sn = data.getString("paymentReferenceNo");
 
-            // 请求本地playright服务
-            log.info("payUrl: {}", payUrl);
+            // 开始扣吗
             HttpHeaders httpHeaders = new HttpHeaders();
-
-            if (false) {
-                throw new RenException("故意错误");
-            }
-
-
-            String qrcodeRaw = null;
+            String qrcodeResp = null;
             boolean isDev = getContext().getConfig().isDev();
             if (isDev) {
-                qrcodeRaw = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
+                qrcodeResp = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             } else {
-                qrcodeRaw = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
+                qrcodeResp = this.getJSON("http://13.235.8.108:8000/scan?url=" + payUrl, new HashMap<String, Object>(), httpHeaders);
             }
-            String qrcode = qrcodeRaw.substring(7);
-
-            String encodedInnerUrl = URLEncoder.encode(qrcode, StandardCharsets.UTF_8);
-            String payurl = null;
-            if (isDev) {
-                payurl = "http://127.0.0.1:8083/sys/zapi/upi?upi=" + encodedInnerUrl;
-            } else {
-                payurl = "https://novo.txzfpay.top/sys/zapi/upi?upi=" + encodedInnerUrl;
+            JSONObject jj = JSON.parseObject(qrcodeResp);
+            if (!jj.getString("status").equals("success")) {
+                throw new RenException("error");
             }
+            // upi://
+            String upi = jj.getString("qr_content");
+            String qrcode = upi.substring(7);
 
-            if (StringUtils.isNotEmpty(payUrl)) {
+            response.setChannelOrder(sn);
+            response.setRaw(qrcode);
 
-                // "upi://pay?pa=65136080@fbl&pn=MAHINSHA%20T%20S&mc=5499&mode=22&orgid=000000&mid=606810090037772&mtid=65136080&tid=FBLPG2942103L3LBKAXNJ81MYT65136080B&tr=FBLPG2942103L3LBKAXNJ81MYT65136080B&am=200.0"
-                // 你的 UPI 链接
+            return response;
 
-                // 正则表达式：匹配 pa= 后面直到 & 或结尾的内容
-                String regex = "pa=([^&]+)&";
-                Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(qrcodeRaw);
-                if (matcher.find()) {
-                    // 提取分组1的值
-                    String paValue = matcher.group(1);
-                    response.setUpi(paValue);
-                    System.out.println("pa 对应的值：" + paValue);
-                } else {
-                    System.out.println("未匹配到 pa 值");
-                    throw new RenException("未能匹配upi");
-                }
-
-                response.setChannelOrder(sn);
-                response.setPayUrl(payurl);
-                response.setRaw(qrcodeRaw);
-                return response;
-            }
-
-            throw new RenException(channelEntity().getChannelLabel() + "错误:" + jsonObject.getString("msg"));
         } else {
             throw new RenException(channelEntity().getChannelLabel() + "错误:" + jsonObject.getString("msg"));
         }
     }
 
-    /**
-     *
-     */
     @Override
-    public ChannelWithdrawResponse doWithdraw(JSONObject jsonObject) {
-        ChannelWithdrawResponse response = new ChannelWithdrawResponse();
-        if (jsonObject.getIntValue("code") == 0) {
-            JSONObject data = jsonObject.getJSONObject("data");
-            int state = data.getIntValue("state");
-            if (state == 0 || state == 1) {
-                response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
-                response.setChannelOrder(data.getString("transferId"));
-                response.setError(null);
-                return response;
-            }
+    public boolean isAsync()  {
+        return true;
+    }
+
+    @Override
+    public String doChargeAsync(ChannelChargeResponse channelChargeResponse, Long id) {
+        return channelChargeResponse.getRaw();
+    }
+
+/**
+ *
+ */
+@Override
+public ChannelWithdrawResponse doWithdraw(JSONObject jsonObject) {
+    ChannelWithdrawResponse response = new ChannelWithdrawResponse();
+    if (jsonObject.getIntValue("code") == 0) {
+        JSONObject data = jsonObject.getJSONObject("data");
+        int state = data.getIntValue("state");
+        if (state == 0 || state == 1) {
             response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
-            response.setError(data.getString("msg"));
+            response.setChannelOrder(data.getString("transferId"));
+            response.setError(null);
             return response;
-        } else {
-            throw new RenException("渠道错误:" + jsonObject.getString("msg"));
         }
+        response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
+        response.setError(data.getString("msg"));
+        return response;
+    } else {
+        throw new RenException("渠道错误:" + jsonObject.getString("msg"));
     }
+}
 
 
-    /**
-     *
-     * {
-     *   "success": true,
-     *   "message": "Status is already up to date.",
-     *   "data": [
-     *      {
-     *         "paymentReferenceNo": "TMO217746382840338056",
-     *         "utrId": "810950254",
-     *         "initialStatus": "Initiated",
-     *         "transactionId": "810950254",
-     *         "updatedStatus": "Success",
-     *         "reason": null,
-     *         "remarks": "Verification SUCCESS Transaction"
-     *       }
-     *   ]
-     * }
-     * @param jsonObject
-     * @return
-     */
-    @Override
-    public ChannelChargeQueryResponse doChargeQuery(JSONObject jsonObject) {
-        ChannelChargeQueryResponse response = new ChannelChargeQueryResponse();
-        boolean code = jsonObject.getBoolean("success");
-        if (code) {
-            JSONObject data = jsonObject.getJSONArray("data").getObject(0, JSONObject.class);
+/**
+ * {
+ * "success": true,
+ * "message": "Status is already up to date.",
+ * "data": [
+ * {
+ * "paymentReferenceNo": "TMO217746382840338056",
+ * "utrId": "810950254",
+ * "initialStatus": "Initiated",
+ * "transactionId": "810950254",
+ * "updatedStatus": "Success",
+ * "reason": null,
+ * "remarks": "Verification SUCCESS Transaction"
+ * }
+ * ]
+ * }
+ *
+ * @param jsonObject
+ * @return
+ */
+@Override
+public ChannelChargeQueryResponse doChargeQuery(JSONObject jsonObject) {
+    ChannelChargeQueryResponse response = new ChannelChargeQueryResponse();
+    boolean code = jsonObject.getBoolean("success");
+    if (code) {
+        JSONObject data = jsonObject.getJSONArray("data").getObject(0, JSONObject.class);
 
-            String status = data.getString("updatedStatus");
-            if (status.equals("Success")) {
-                response.setUtr(data.getString("utrId"));
-                response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
-            } else {
-                response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
-            }
-            return response;
+        String status = data.getString("updatedStatus");
+        if (status.equals("Success")) {
+            response.setUtr(data.getString("utrId"));
+            response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
         } else {
             response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
-            response.setError(jsonObject.getString("message"));
-            return response;
-        }
-    }
-
-    /**
-     *
-     */
-    @Override
-    public ChannelWithdrawResponse doWithdrawQuery(JSONObject jsonObject) {
-        ChannelWithdrawResponse response = new ChannelWithdrawResponse();
-
-        int code = jsonObject.getIntValue("code");
-        if (code == 0) {
-            JSONObject data = jsonObject.getJSONObject("data");
-            int state = data.getIntValue("state");
-            if (state == 2) {
-                response.setChannelOrder(data.getString("order_number"));
-                response.setStatus(ZooConstant.WITHDRAW_STATUS_SUCCESS);
-            } else if (state == 3 || state == 4) {
-                response.setError("渠道明确失败");
-                response.setStatus(ZooConstant.WITHDRAW_STATUS_FAIL);
-            } else {
-                response.setError("处理中");
-                response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
-            }
-        } else {
-            response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
-            response.setError("渠道异常:" + jsonObject.getString("msg"));
         }
         return response;
+    } else {
+        response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
+        response.setError(jsonObject.getString("message"));
+        return response;
     }
+}
 
-    /**
-     * {
-     * "success":true,
-     * "message":"Balance Listed Successfully",
-     * "data":{
-     *  "currentBalance":"200.00",
-     *  "totalBalance":"200.00",
-     *  "utilizedBalance":"0.00",
-     *  "freezBalance":"0.00",
-     *  "holdBalance":"0.00",
-     *  "lienBalance":"0.00",
-     *  "pendingBalance":"0.00",
-     *  "status":"Active"
-     *  }}
-     */
-    @Override
-    public ChannelBalanceResponse doBalance(JSONObject jsonObject) {
-        boolean success = jsonObject.getBooleanValue("success");
-        if (success) {
-            JSONObject data = jsonObject.getJSONObject("data");
-            ChannelBalanceResponse response = new ChannelBalanceResponse();
-            BigDecimal bal = new BigDecimal(data.getString("totalBalance"));
-            response.setBalance(bal);
-            String currbal = data.getString("currentBalance");
-            response.setBalanceMemo("total:" + bal + ", current:" + currbal.toString());
-            log.info("balance:{}, current:{}", bal, currbal);
-            return response;
-        }
-        throw new RenException("查询余额失败");
-    }
+/**
+ *
+ */
+@Override
+public ChannelWithdrawResponse doWithdrawQuery(JSONObject jsonObject) {
+    ChannelWithdrawResponse response = new ChannelWithdrawResponse();
 
-    @Override
-    public ChannelChargeQueryResponse chargeNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZChargeEntity chargeEntity) throws IOException {
-        ChannelChargeQueryResponse resp = new ChannelChargeQueryResponse();
-        TreeMap<String, Object> map = checkSignByJson((String) body, API_CHARGE_NOTIFY);
-        if (map.get("state").equals(1)) {
-            resp.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
-            return resp;
-        }
-        resp.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
-        return resp;
-    }
-
-
-    /**
-     * 返回标准的代付状态
-     */
-    @Override
-    public ChannelWithdrawResponse drawNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZWithdrawEntity withdrawEntity) throws IOException {
-        TreeMap<String, Object> map = checkSignByForm((String) body, API_WITHDRAW_NOTIFY);
-        String state = (String) map.get("state");
-        ChannelWithdrawResponse resp = new ChannelWithdrawResponse();
-        if ("2".equals(state)) {
-            resp.setStatus(ZooConstant.WITHDRAW_STATUS_SUCCESS);
-        } else if ("3".equals(state)) {
-            resp.setStatus(ZooConstant.WITHDRAW_STATUS_FAIL);
+    int code = jsonObject.getIntValue("code");
+    if (code == 0) {
+        JSONObject data = jsonObject.getJSONObject("data");
+        int state = data.getIntValue("state");
+        if (state == 2) {
+            response.setChannelOrder(data.getString("order_number"));
+            response.setStatus(ZooConstant.WITHDRAW_STATUS_SUCCESS);
+        } else if (state == 3 || state == 4) {
+            response.setError("渠道明确失败");
+            response.setStatus(ZooConstant.WITHDRAW_STATUS_FAIL);
         } else {
-            resp.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
+            response.setError("处理中");
+            response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
         }
+    } else {
+        response.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
+        response.setError("渠道异常:" + jsonObject.getString("msg"));
+    }
+    return response;
+}
+
+/**
+ * {
+ * "success":true,
+ * "message":"Balance Listed Successfully",
+ * "data":{
+ * "currentBalance":"200.00",
+ * "totalBalance":"200.00",
+ * "utilizedBalance":"0.00",
+ * "freezBalance":"0.00",
+ * "holdBalance":"0.00",
+ * "lienBalance":"0.00",
+ * "pendingBalance":"0.00",
+ * "status":"Active"
+ * }}
+ */
+@Override
+public ChannelBalanceResponse doBalance(JSONObject jsonObject) {
+    boolean success = jsonObject.getBooleanValue("success");
+    if (success) {
+        JSONObject data = jsonObject.getJSONObject("data");
+        ChannelBalanceResponse response = new ChannelBalanceResponse();
+        BigDecimal bal = new BigDecimal(data.getString("totalBalance"));
+        response.setBalance(bal);
+        String currbal = data.getString("currentBalance");
+        response.setBalanceMemo("total:" + bal + ", current:" + currbal.toString());
+        log.info("balance:{}, current:{}", bal, currbal);
+        return response;
+    }
+    throw new RenException("查询余额失败");
+}
+
+@Override
+public ChannelChargeQueryResponse chargeNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZChargeEntity chargeEntity) throws IOException {
+    ChannelChargeQueryResponse resp = new ChannelChargeQueryResponse();
+    TreeMap<String, Object> map = checkSignByJson((String) body, API_CHARGE_NOTIFY);
+    if (map.get("state").equals(1)) {
+        resp.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
         return resp;
     }
+    resp.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
+    return resp;
+}
 
-    public String responseChargeOk() {
-        return "SUCCESS";
+
+/**
+ * 返回标准的代付状态
+ */
+@Override
+public ChannelWithdrawResponse drawNotified(String contentType, Object body, Long deptId, Long id, HttpServletRequest request, HttpServletResponse response, ZWithdrawEntity withdrawEntity) throws IOException {
+    TreeMap<String, Object> map = checkSignByForm((String) body, API_WITHDRAW_NOTIFY);
+    String state = (String) map.get("state");
+    ChannelWithdrawResponse resp = new ChannelWithdrawResponse();
+    if ("2".equals(state)) {
+        resp.setStatus(ZooConstant.WITHDRAW_STATUS_SUCCESS);
+    } else if ("3".equals(state)) {
+        resp.setStatus(ZooConstant.WITHDRAW_STATUS_FAIL);
+    } else {
+        resp.setStatus(ZooConstant.WITHDRAW_STATUS_ASSIGNED);
     }
+    return resp;
+}
 
-    public String responseWithdrawOk() {
-        return "SUCCESS";
-    }
+public String responseChargeOk() {
+    return "SUCCESS";
+}
 
-
+public String responseWithdrawOk() {
+    return "SUCCESS";
+}
 
 
 }

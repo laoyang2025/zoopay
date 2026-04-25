@@ -38,6 +38,13 @@ import java.rmi.RemoteException;
 import java.util.*;
 
 public interface PayChannel {
+
+    default boolean isAsync() {
+        return false;
+    }
+
+    default String doChargeAsync(ChannelChargeResponse response, Long id) { return "error"; }
+
     /**
      * @return
      */

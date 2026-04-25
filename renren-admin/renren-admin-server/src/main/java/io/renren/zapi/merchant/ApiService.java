@@ -247,56 +247,60 @@ public class ApiService {
         // 处理上下文
         ApiContext.setContext(context);
 
-        // 渠道路由, 尝试渠道收款
-        ChargeRouter chargeRouter = routeService.getChargeRouter(ZooConstant.PROCESS_MODE_CHANNEL, chargeEntity.getPayCode());
-        List<ZRouteEntity> routes = chargeRouter.select(chargeEntity);
-        for (ZRouteEntity route : routes) {
-            log.info("尝试渠道: {}", route.getObjectName());
-            PayChannel payChannel = channelFactory.get(route.getObjectId());
-            try {
-                ChannelChargeResponse channelResponse = payChannel.charge(chargeEntity);
-                if (channelResponse.getError() != null) {
-                    log.error("尝试渠道[{}]失败, error:{}", payChannel.getContext().getChannelEntity().getChannelLabel(), channelResponse.getError());
-                    String msg = String.format("尝试渠道[%s]收款失败, 渠道错误:{}", payChannel.getContext().getChannelEntity().getChannelLabel(), channelResponse.getError());
-                    alarmService.warn(merchant.getDeptId(), "收款渠道异常", msg);
+        try {
+            // 渠道路由, 尝试渠道收款
+            ChargeRouter chargeRouter = routeService.getChargeRouter(ZooConstant.PROCESS_MODE_CHANNEL, chargeEntity.getPayCode());
+            List<ZRouteEntity> routes = chargeRouter.select(chargeEntity);
+            for (ZRouteEntity route : routes) {
+                log.info("尝试渠道: {}", route.getObjectName());
+                PayChannel payChannel = channelFactory.get(route.getObjectId());
+                try {
+                    ChannelChargeResponse channelResponse = payChannel.charge(chargeEntity);
+                    if (channelResponse.getError() != null) {
+                        log.error("尝试渠道[{}]失败, error:{}", payChannel.getContext().getChannelEntity().getChannelLabel(), channelResponse.getError());
+                        String msg = String.format("尝试渠道[%s]收款失败, 渠道错误:{}", payChannel.getContext().getChannelEntity().getChannelLabel(), channelResponse.getError());
+                        alarmService.warn(merchant.getDeptId(), "收款渠道异常", msg);
+                        continue;
+                    }
+                    // 渠道处理成功了, 根据路由 更新扣率信息, 处理模式
+                    // 根据渠道结果， 更新 渠道单号
+                    if (!payChannel.isLocal()) {
+                        ZChannelEntity channelEntity = payChannel.getContext().getChannelEntity();
+                        zChargeDao.update(null, Wrappers.<ZChargeEntity>lambdaUpdate()
+                                .eq(ZChargeEntity::getId, chargeEntity.getId())
+                                .set(ZChargeEntity::getProcessStatus, ZooConstant.CHARGE_STATUS_PROCESSING)
+                                .set(ZChargeEntity::getHandleMode, ZooConstant.PROCESS_MODE_CHANNEL)
+                                .set(ZChargeEntity::getMerchantRate, route.getChargeRate())
+                                .set(ZChargeEntity::getChannelId, channelEntity.getId())
+                                .set(ZChargeEntity::getChannelLabel, channelEntity.getChannelLabel())
+                                .set(ZChargeEntity::getChannelRate, channelEntity.getChargeRate())
+                                .set(ZChargeEntity::getChannelCost, channelEntity.getChargeRate().multiply(chargeEntity.getAmount()).setScale(2, RoundingMode.UP))
+                                .set(ZChargeEntity::getChannelId, channelEntity.getId())
+                                .set(channelResponse.getChannelOrder() != null, ZChargeEntity::getChannelOrder, channelResponse.getChannelOrder())
+                                .set(channelResponse.getUpi() != null, ZChargeEntity::getUpi, channelResponse.getUpi())
+                        );
+                    }
+
+                    ChargeResponse response = new ChargeResponse();
+                    Result<ChargeResponse> result = new Result<>();
+                    response.setUpi(channelResponse.getUpi());
+                    response.setPayUrl(channelResponse.getPayUrl());
+                    response.setRaw(channelResponse.getRaw());
+                    response.setId(chargeEntity.getId());
+                    result.setData(response);
+                    context.info("send: {}", response);
+                    return result;
+                } catch (Exception ex) {
+                    log.error("尝试渠道[{}], 异常", ex.getMessage());
+                    ex.printStackTrace();
+                    alarmService.warn(merchant.getDeptId(), "渠道异常", ex.getMessage());
                     continue;
                 }
-                // 渠道处理成功了, 根据路由 更新扣率信息, 处理模式
-                // 根据渠道结果， 更新 渠道单号
-                if (!payChannel.isLocal()) {
-                    ZChannelEntity channelEntity = payChannel.getContext().getChannelEntity();
-                    zChargeDao.update(null, Wrappers.<ZChargeEntity>lambdaUpdate()
-                            .eq(ZChargeEntity::getId, chargeEntity.getId())
-                            .set(ZChargeEntity::getProcessStatus, ZooConstant.CHARGE_STATUS_PROCESSING)
-                            .set(ZChargeEntity::getHandleMode, ZooConstant.PROCESS_MODE_CHANNEL)
-                            .set(ZChargeEntity::getMerchantRate, route.getChargeRate())
-                            .set(ZChargeEntity::getChannelId, channelEntity.getId())
-                            .set(ZChargeEntity::getChannelLabel, channelEntity.getChannelLabel())
-                            .set(ZChargeEntity::getChannelRate, channelEntity.getChargeRate())
-                            .set(ZChargeEntity::getChannelCost, channelEntity.getChargeRate().multiply(chargeEntity.getAmount()).setScale(2, RoundingMode.UP))
-                            .set(ZChargeEntity::getChannelId, channelEntity.getId())
-                            .set(channelResponse.getChannelOrder() != null, ZChargeEntity::getChannelOrder, channelResponse.getChannelOrder())
-                            .set(channelResponse.getUpi() != null, ZChargeEntity::getUpi, channelResponse.getUpi())
-                    );
-                }
-
-                ChargeResponse response = new ChargeResponse();
-                Result<ChargeResponse> result = new Result<>();
-                response.setUpi(channelResponse.getUpi());
-                response.setPayUrl(channelResponse.getPayUrl());
-                response.setRaw(channelResponse.getRaw());
-                response.setId(chargeEntity.getId());
-                result.setData(response);
-                context.info("send: {}", response);
-                return result;
-            } catch (Exception ex) {
-                log.error("尝试渠道[{}], 异常", ex.getMessage());
-                ex.printStackTrace();
-                alarmService.warn(merchant.getDeptId(), "渠道异常", ex.getMessage());
-                continue;
             }
+            throw new RenException("no serviceable channel");
+        } finally {
+            ApiContext.clear();
         }
-        throw new RenException("no serviceable channel");
     }
 
     public Result<ChargeQueryResponse> chargeQuery(String body, String sign, String appKey) {

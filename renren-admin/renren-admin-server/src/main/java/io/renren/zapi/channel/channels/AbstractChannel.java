@@ -171,16 +171,20 @@ abstract public class AbstractChannel implements PayChannel {
     @Override
     public ChannelChargeResponse charge(ZChargeEntity entity) {
 
+        // 商户自己包装
         if (entity.getPayCode().equals("raw")) {
+            log.info("---------------------raw mode---------------------------");
             return syncCharge(entity);
         }
 
-        // 异步处理
+        // 渠道走异步
         if (isAsync()) {
+            log.info("---------------------async---------------------------");
             return chargeAsync(entity);
         }
 
-        //
+        // 渠道走同步
+        log.info("---------------------sync---------------------------");
         return syncCharge(entity);
     }
 

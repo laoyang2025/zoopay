@@ -272,9 +272,14 @@ public class TmoPay extends PostJsonChannel {
             if (!jj.getString("status").equals("success")) {
                 throw new RenException("error");
             }
-            // upi://
-            String upi = jj.getString("qr_content");
-            String qrcode = upi.substring(7);
+            // upi://pay?pa=65136080@fbl&pn=MAHINSHA%20T%20S&mc=5499&mode=22&orgid=000000&mid=606810090037772&mtid=65136080&tid=FBLPG4554902DJGHQ7O9U5PAAT65136080B&tr=FBLPG4554902DJGHQ7O9U5PAAT65136080B&am=300.0
+            // -> pay?pa=xxxx2xxx&
+            String qrcode = jj.getString("qr_content");
+            qrcode = qrcode.substring(7);
+
+            int beg = qrcode.indexOf("?") + 1;
+            int end = qrcode.indexOf("&");
+            String upi = qrcode.substring(beg, end);
 
             response.setChannelOrder(sn);
             response.setRaw(qrcode);

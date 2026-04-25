@@ -292,7 +292,7 @@ public class TmoPay extends PostJsonChannel {
             if (isDev) {
                 finalPayUrl = "http://127.0.0.1:7001/sys/landing/sync.html?upi=" + encodedUrl;
             } else {
-                finalPayUrl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + encodedUrl;
+                finalPayUrl = "https://novo.txzfpay.top/sys/landing/sync.html?upi=" + encodedUrl;
             }
             response.setPayUrl(finalPayUrl);
 

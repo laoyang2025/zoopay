@@ -285,7 +285,7 @@ public class TmoPay extends PostJsonChannel {
             if (isDev) {
                 payurl = "http://127.0.0.1:7001/sys/landing/sync.html?upi=" + qrcode;
             } else {
-                payurl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + qrcode);
+                payurl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + qrcode;
             }
             response.setPayUrl(payUrl);
 

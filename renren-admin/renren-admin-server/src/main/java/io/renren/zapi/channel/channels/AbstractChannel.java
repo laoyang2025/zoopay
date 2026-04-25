@@ -146,7 +146,7 @@ abstract public class AbstractChannel implements PayChannel {
             if (isDev) {
                 payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + current.getId();
             } else {
-                payurl = "https://novo.txzfpay.top/sys/landing/async?channel=tmo&id=" + current.getId();
+                payurl = "https://novo.txzfpay.top/sys/landing/async.html?channel=tmo&id=" + current.getId();
             }
 
             ChannelChargeResponse response = new ChannelChargeResponse();

@@ -252,8 +252,9 @@ public class TmoPay extends PostJsonChannel {
     @Override
     public ChannelChargeResponse doCharge(JSONObject jsonObject) {
         if (jsonObject.getBoolean("success")) {
-            JSONObject data = jsonObject.getJSONObject("data");
 
+            // 请求渠道成功
+            JSONObject data = jsonObject.getJSONObject("data");
             ChannelChargeResponse response = new ChannelChargeResponse();
             String payUrl = data.getString("paymentLink");
             String sn = data.getString("paymentReferenceNo");
@@ -277,9 +278,18 @@ public class TmoPay extends PostJsonChannel {
 
             response.setChannelOrder(sn);
             response.setRaw(qrcode);
+            response.setUpi(upi);
+
+            // 同步产品才用得到
+            String payurl = null;
+            if (isDev) {
+                payurl = "http://127.0.0.1:7001/sys/landing/sync.html?upi=" + qrcode;
+            } else {
+                payurl = "https://novo.txzfpay.top/sys/landing/async.html?upi=" + qrcode);
+            }
+            response.setPayUrl(payUrl);
 
             return response;
-
         } else {
             throw new RenException(channelEntity().getChannelLabel() + "错误:" + jsonObject.getString("msg"));
         }

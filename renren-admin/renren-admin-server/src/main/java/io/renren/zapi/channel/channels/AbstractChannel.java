@@ -132,56 +132,56 @@ abstract public class AbstractChannel implements PayChannel {
 
     }
 
+    private ChannelChargeResponse chargeAsync(ZChargeEntity entity) {
+        ZChargeEntity current = getContext().getCurrentChargeEntity();
+        boolean isDev = getContext().getConfig().isDev();
+        String payurl = null;
+        if (isDev) {
+            payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + current.getId();
+        } else {
+            payurl = "https://novo.txzfpay.top/sys/landing/async.html?channel=tmo&id=" + current.getId();
+        }
+        ChannelChargeResponse response = new ChannelChargeResponse();
+        response.setPayUrl(payurl);
+        RedisUtils redisUtils = getContext().getRedisUtils();
+        ZChargeDao chargeDao = getContext().getChargeDao();
+        // 异步处理
+        CompletableFuture.runAsync(() -> {
+            ChannelChargeResponse channelChargeResponse = this.syncCharge(entity);
+            String qrcode = this.doChargeAsync(channelChargeResponse, entity.getId());
+            String idStr = entity.getId().toString();
+            redisUtils.leftPush(idStr.toString(), qrcode);
+            redisUtils.expire(idStr, 15);
+            // 更新订单号
+            if (channelChargeResponse.getChannelOrder() != null) {
+                log.info("更新渠道单号{}:{}", entity.getId(), channelChargeResponse.getChannelOrder());
+                chargeDao.update(
+                        Wrappers.<ZChargeEntity>lambdaUpdate()
+                                .eq(ZChargeEntity::getId, entity.getId())
+                                .set(ZChargeEntity::getChannelOrder, channelChargeResponse.getChannelOrder())
+                );
+            }
+        });
+        // 返回
+        return response;
+
+    }
+
 
     @Override
     public ChannelChargeResponse charge(ZChargeEntity entity) {
 
+        if (entity.getPayCode().equals("raw")) {
+            return syncCharge(entity);
+        }
+
         // 异步处理
         if (isAsync()) {
-            ZChargeEntity current = getContext().getCurrentChargeEntity();
-
-            boolean isDev = getContext().getConfig().isDev();
-
-            String payurl = null;
-            if (isDev) {
-                payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + current.getId();
-            } else {
-                payurl = "https://novo.txzfpay.top/sys/landing/async.html?channel=tmo&id=" + current.getId();
-            }
-
-            ChannelChargeResponse response = new ChannelChargeResponse();
-            response.setPayUrl(payurl);
-
-            RedisUtils redisUtils = getContext().getRedisUtils();
-            ZChargeDao chargeDao = getContext().getChargeDao();
-
-            // 异步处理
-            CompletableFuture.runAsync(() -> {
-                ChannelChargeResponse channelChargeResponse = this.syncCharge(entity);
-                String qrcode = this.doChargeAsync(channelChargeResponse, entity.getId());
-                String idStr = entity.getId().toString();
-                redisUtils.leftPush(idStr.toString(), qrcode);
-                redisUtils.expire(idStr, 15);
-
-                // 更新订单号
-                if (channelChargeResponse.getChannelOrder() != null) {
-                    log.info("更新渠道单号{}:{}", entity.getId(), channelChargeResponse.getChannelOrder());
-                    chargeDao.update(
-                            Wrappers.<ZChargeEntity>lambdaUpdate()
-                                    .eq(ZChargeEntity::getId, entity.getId())
-                                    .set(ZChargeEntity::getChannelOrder, channelChargeResponse.getChannelOrder())
-                    );
-                }
-            });
-
-            // 返回
-            return response;
+            return chargeAsync(entity);
         }
 
         //
         return syncCharge(entity);
-
-
     }
 
     @Override

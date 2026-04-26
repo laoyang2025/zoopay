@@ -18,6 +18,7 @@ import io.renren.zapi.channel.PayChannel;
 import io.renren.zapi.channel.dto.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URLEncoder;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 
@@ -134,17 +135,28 @@ abstract public class AbstractChannel implements PayChannel {
 
     private ChannelChargeResponse chargeAsync(ZChargeEntity entity) {
         ZChargeEntity current = getContext().getCurrentChargeEntity();
-        boolean isDev = getContext().getConfig().isDev();
         String payurl = null;
+        boolean isDev = getContext().getConfig().isDev();
+
+        // 让C端就近访问
+        if (entity.getPayCode().equals("best")) {
+            ChannelChargeResponse response = new ChannelChargeResponse();
+            payurl = "https://qrcode.txzfpay.top/best.html?channel=TmoPay&id=" + entity.getId();
+            response.setPayUrl(payurl);
+            return response;
+        }
+
         if (isDev) {
-            payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + current.getId();
+            payurl = "http://127.0.0.1:7001/sys/landing/async.html?channel=tmo&id=" + entity.getId();
         } else {
-            payurl = "https://novo.txzfpay.top/sys/landing/async.html?channel=tmo&id=" + current.getId();
+            payurl = "https://novo.txzfpay.top/sys/landing/async.html?channel=tmo&id=" + entity.getId();
         }
         ChannelChargeResponse response = new ChannelChargeResponse();
         response.setPayUrl(payurl);
         RedisUtils redisUtils = getContext().getRedisUtils();
         ZChargeDao chargeDao = getContext().getChargeDao();
+
+
         // 异步处理
         CompletableFuture.runAsync(() -> {
             ChannelChargeResponse channelChargeResponse = this.syncCharge(entity);

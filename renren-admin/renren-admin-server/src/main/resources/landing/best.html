@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Options</title>
+    <style>
+        /* 全局样式重置 + 基础变量定义 */
+        :root {
+            --primary-color: #1a237e;
+            --secondary-color: #f5f7ff;
+            --text-color: #2d3748;
+            --light-gray: #e2e8f0;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --danger-color: #dc2626; /* 新增危险色变量 */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 页面背景和主体样式 */
+        body {
+            background: linear-gradient(180deg, var(--secondary-color) 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 新增：加载中样式 */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, var(--secondary-color) 0%, #ffffff 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light-gray);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* 加载失败样式 */
+        .error-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, var(--secondary-color) 0%, #ffffff 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 72px;
+            color: var(--danger-color);
+            margin-bottom: 24px;
+        }
+
+        .error-title {
+            color: var(--danger-color);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            color: #718096;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            max-width: 400px;
+        }
+
+        .error-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .error-button:hover {
+            background: #283593;
+            transform: translateY(-2px);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 新增：倒计时容器样式 */
+        .countdown-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(26, 35, 126, 0.03);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--light-gray);
+            display: none; /* 初始隐藏 */
+        }
+
+        .countdown-title {
+            color: var(--danger-color);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .countdown-timer {
+            color: var(--primary-color);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 16px;
+            display: none; /* 初始隐藏 */
+        }
+
+        /* 主标题 */
+        .page-title {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        /* 副标题 */
+        .page-subtitle {
+            color: #718096;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* 支付选项容器 */
+        .payment-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            max-width: 520px;
+            margin: 0 auto;
+            flex-grow: 1;
+            display: none; /* 初始隐藏 */
+        }
+
+        /* 支付选项卡片样式 - 核心升级 */
+        .payment-card {
+            background: #ffffff;
+            border-radius: var(--radius-md);
+            padding: 28px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        /* 卡片hover/激活效果 */
+        .payment-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--light-gray);
+        }
+
+        /* 卡片点击波纹效果 */
+        .payment-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(26, 35, 126, 0.05);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .payment-card:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        /* 支付方式图片样式 - 优化尺寸和对齐 */
+        .payment-img {
+            max-width: 90%;
+            max-height: 90px;
+            object-fit: contain;
+            z-index: 1;
+            transition: var(--transition);
+        }
+
+        .payment-card:hover .payment-img {
+            transform: scale(1.05);
+        }
+
+        /* 底部区域 */
+        .page-footer {
+            margin-top: 48px;
+            text-align: center;
+            padding-bottom: 24px;
+            display: none; /* 初始隐藏 */
+        }
+
+        /* 底部提示文字 */
+        .footer-note {
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* 安全标识 */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            color: #48bb78;
+            font-size: 13px;
+        }
+
+        .security-icon {
+            font-size: 16px;
+        }
+
+        /* 新增：超时界面样式 */
+        .timeout-container {
+            max-width: 520px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 60px 20px;
+            flex-grow: 1;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeout-icon {
+            font-size: 72px;
+            color: var(--danger-color);
+            margin-bottom: 24px;
+        }
+
+        .timeout-title {
+            color: var(--danger-color);
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .timeout-message {
+            color: #718096;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            max-width: 400px;
+        }
+
+        .timeout-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .timeout-button:hover {
+            background: #283593;
+            transform: translateY(-2px);
+        }
+
+        /* 响应式适配 - 精细化适配 */
+        @media (max-width: 420px) {
+            .payment-container {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .payment-img {
+                max-height: 80px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .page-header {
+                margin-bottom: 32px;
+            }
+
+            .countdown-timer {
+                font-size: 18px;
+            }
+
+            .timeout-title {
+                font-size: 26px;
+            }
+
+            .timeout-message {
+                font-size: 16px;
+            }
+
+            .loading-text {
+                font-size: 16px;
+            }
+
+            .error-title {
+                font-size: 26px;
+            }
+
+            .error-message {
+                font-size: 16px;
+            }
+        }
+
+        /* 深色模式适配（可选增强） */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #90caf9;
+                --secondary-color: #121212;
+                --text-color: #e0e0e0;
+                --light-gray: #2d2d2d;
+                --danger-color: #f87171;
+            }
+
+            body {
+                background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            }
+
+            .loading-container {
+                background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            }
+
+            .error-container {
+                background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            }
+
+            .payment-card {
+                background: #242424;
+            }
+
+            .countdown-container {
+                background: rgba(144, 202, 249, 0.05);
+            }
+
+            .timeout-container {
+                background: transparent;
+            }
+
+            .timeout-button {
+                background: #64b5f6;
+                color: #0d47a1;
+            }
+
+            .timeout-button:hover {
+                background: #90caf9;
+            }
+
+            .error-button {
+                background: #64b5f6;
+                color: #0d47a1;
+            }
+
+            .error-button:hover {
+                background: #90caf9;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 加载中容器 -->
+<div class="loading-container" id="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading Payment Options...</div>
+</div>
+
+<!-- 加载失败容器 -->
+<div class="error-container" id="error-container">
+    <div class="error-icon">❌</div>
+    <h2 class="error-title">Load Failed</h2>
+    <p class="error-message">Failed to load payment information. Please try again later.</p>
+    <button class="error-button" onclick="window.location.reload()">Retry</button>
+</div>
+
+<!-- 倒计时区域（放在页面最顶部） -->
+<div class="countdown-container" id="countdown-container">
+    <p class="countdown-title">Payment Session Expires In</p>
+    <div id="countdown-timer" class="countdown-timer">04:00</div>
+</div>
+
+<!-- 页面头部 -->
+<div class="page-header" id="page-header">
+    <h1 class="page-title">Select Payment Method</h1>
+    <p class="page-subtitle">Choose your preferred payment option to complete the transaction</p>
+</div>
+
+<!-- 支付选项容器（添加id用于超时隐藏） -->
+<div id="payment-container" class="payment-container">
+    <!-- Paytm 支付选项 -->
+    <a href="paytm://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/paytm.png" alt="Paytm" class="payment-img">
+    </a>
+    <!-- PhonePe 支付选项 -->
+    <a href="phonepe://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/phonepe.png" alt="PhonePe" class="payment-img">
+    </a>
+    <!-- UPI 支付选项 -->
+    <a href="upi://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/upi.png" alt="UPI" class="payment-img">
+    </a>
+    <!-- Google Pay 支付选项 -->
+    <a href="gpay://{{upi}}" target="_blank" class="payment-card">
+        <img src="/sys/images/gpay.png" alt="Google Pay" class="payment-img">
+    </a>
+</div>
+
+<!-- 超时界面 -->
+<div id="timeout-container" class="timeout-container">
+    <div class="timeout-icon">⏱️</div>
+    <h2 class="timeout-title">Session Expired</h2>
+    <p class="timeout-message">Your payment session has expired. Please restart the payment process to continue.</p>
+    <button class="timeout-button" onclick="location.reload()">Restart Payment</button>
+</div>
+
+<!-- 页面底部（添加id用于超时隐藏） -->
+<div id="page-footer" class="page-footer">
+    <p class="footer-note">Your payment is encrypted and secure</p>
+    <div class="security-badge">
+        <span class="security-icon">🔒</span>
+        <span>Secure Payment Gateway</span>
+    </div>
+</div>
+
+<script>
+    let countdownInterval;
+    let countdownTime = 4 * 60;
+
+    const loadingContainer = document.getElementById('loading-container');
+    const errorContainer = document.getElementById('error-container');
+    const countdownContainer = document.getElementById('countdown-container');
+    const timerElement = document.getElementById('countdown-timer');
+    const paymentContainer = document.getElementById('payment-container');
+    const pageFooter = document.getElementById('page-footer');
+    const timeoutContainer = document.getElementById('timeout-container');
+    const pageHeader = document.getElementById('page-header');
+
+    function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        return { id: params.get('id'), channel: params.get('channel') };
+    }
+
+    function replaceUpiPlaceholder(upiValue) {
+        document.querySelectorAll('[href*="{{upi}}"]').forEach(el => {
+            el.href = el.href.replace(/{{upi}}/g, upiValue);
+        });
+    }
+
+    function updateCountdown() {
+        const minutes = Math.floor(countdownTime / 60);
+        const seconds = countdownTime % 60;
+        const fm = minutes.toString().padStart(2, '0');
+        const fs = seconds.toString().padStart(2, '0');
+        timerElement.textContent = `${fm}:${fs}`;
+
+        if (countdownTime <= 0) {
+            clearInterval(countdownInterval);
+            showTimeoutScreen();
+            return;
+        }
+        if (countdownTime <= 60) {
+            timerElement.style.color = '#dc2626';
+            timerElement.style.fontWeight = '800';
+        }
+        countdownTime--;
+    }
+
+    function showTimeoutScreen() {
+        countdownContainer.style.display = 'none';
+        pageHeader.style.display = 'none';
+        paymentContainer.style.display = 'none';
+        pageFooter.style.display = 'none';
+        timeoutContainer.style.display = 'flex';
+    }
+
+    function showErrorScreen(msg = "加载失败") {
+        loadingContainer.style.display = 'none';
+        errorContainer.style.display = 'flex';
+    }
+
+    function showMainPage() {
+        loadingContainer.style.opacity = 0;
+        setTimeout(() => {
+            loadingContainer.style.display = 'none';
+        }, 300);
+        countdownContainer.style.display = 'block';
+        pageHeader.style.display = 'block';
+        paymentContainer.style.display = 'grid';
+        pageFooter.style.display = 'block';
+        countdownInterval = setInterval(updateCountdown, 1000);
+        updateCountdown();
+    }
+
+    // 新增：带超时的fetch封装（可复用）
+    function fetchWithTimeout(url, options = {}, timeout = 15000) { // 默认超时10秒
+                                                                    // 1. 创建AbortController，用于超时后终止请求
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        // 2. 超时定时器：超时后终止请求并reject
+        let timer = null;
+        const timeoutPromise = new Promise((_, reject) => {
+             timer = setTimeout(() => {
+                controller.abort(); // 终止fetch请求
+                reject(new Error(`请求超时（${timeout/1000}秒内未响应）`));
+            }, timeout);
+        });
+
+        // 3. 原生fetch（绑定abort信号）
+        const fetchPromise = fetch(url, { ...options, signal })
+            .finally(() => clearTimeout(timer)); // 请求完成（成功/失败）都清除定时器
+
+        // 4. 赛跑：要么fetch完成，要么超时
+        return Promise.race([fetchPromise, timeoutPromise]);
+    }
+
+    async function init() {
+        try {
+            const { id, channel, url } = getUrlParams();
+            if (!id || !channel) {
+                throw new Error("缺少 id 或 channel 参数");
+            }
+
+            const p = new URLSearchParams({ id, channel, url });
+
+            console.log("请求qrcode...");
+            const res = await fetchWithTimeout(`/scan?${p}`);
+            console.log("拿到", res)
+
+            if (!res.ok) {
+                throw new Error("接口请求失败，状态码："+res.status);
+            }
+
+            const result = await res.text();
+            if (!result) {
+                throw new Error("接口未返回 upi 字段");
+            }
+
+            replaceUpiPlaceholder(result);
+            showMainPage();
+
+        } catch (err) {
+            console.error(err);
+            showErrorScreen(err.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

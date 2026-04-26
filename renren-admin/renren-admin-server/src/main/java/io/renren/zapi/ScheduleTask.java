@@ -70,10 +70,10 @@ public class ScheduleTask {
     private ZConfig zConfig;
 
     // @tmo
-    @Scheduled(fixedRate = 10_000)
+    @Scheduled(fixedRate = 15_000)
     public void tmoQuery() {
         Long channelId = zConfig.isDev() ?  2043240981100064770L: 2043240600580022274L;
-        Date tenSecondsAgo = DateUtils.addSeconds(new Date(), -10);
+        Date tenSecondsAgo = DateUtils.addSeconds(new Date(), -15);
         Date fourMinutesAgo = DateUtils.addMinutes(new Date(), -4);
 
         // 4分钟前, 到10秒钟前的还在处理中的交易

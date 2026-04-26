@@ -110,14 +110,11 @@ abstract public class AbstractChannel implements PayChannel {
         }
         ZChannelEntity channelEntity = channelEntity();
 
-        log.info("球球:{}", channelEntity.getChargeUrl());
         try {
             // 提交服务器
             String resp = this.request(channelEntity.getChargeUrl(), map, "charge");
-            log.info("收到: {}", resp);
             // 拿到服务器结果
             JSONObject jsonObject = JSON.parseObject(resp);
-            log.info("收到渠道:{}", jsonObject);
             ChannelChargeResponse response = doCharge(jsonObject);
             if (response.getError() != null && sign != null) {
                 getContext().error("signstr: {} | sign: {}", sign.getKey(), sign.getValue());

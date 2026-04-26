@@ -244,9 +244,17 @@ public class ApiController {
 
     @GetMapping("qrcode")
     public String qrcode(String id, String channel) {
-        String o = (String)redisUtils.rightPop(id, 15);
-        if (o != null) {
-            return o;
+        try {
+            String o = (String) redisUtils.rightPop(id, 15);
+            if (o != null) {
+                return o;
+            }
+        } catch (Exception e) {
+            String o1 = (String)redisUtils.get(id + "-k");
+            if (o1 != null) {
+                return o1;
+            }
+            return null;
         }
 
         String o1 = (String)redisUtils.get(id + "-k");

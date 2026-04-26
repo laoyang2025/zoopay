@@ -312,11 +312,11 @@ public interface PayChannel {
             }
         }
         url = url + "?" + queryString;
-        getContext().info("send: {}", url);
+//        getContext().info("send: {}", url);
         HttpEntity<String> request = new HttpEntity<>(headers);
         ResponseEntity<String> forEntity = restTemplate.exchange(url, HttpMethod.GET,request, String.class);
         String respStr = forEntity.getBody();
-        getContext().info("recv: {}", respStr);
+//        getContext().info("recv: {}", respStr);
         return respStr;
     }
 
@@ -350,7 +350,7 @@ public interface PayChannel {
         try {
             ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, request, String.class);
             String respStr = responseEntity.getBody();
-            getContext().info("recv: {}", respStr);
+//            getContext().info("recv: {}", respStr);
             return respStr;
         } catch (Exception ex) {
             throw new RenException(ex.getMessage());
@@ -405,11 +405,11 @@ public interface PayChannel {
         } catch (JsonProcessingException ex) {
             throw new RenException("invalid request");
         }
-        getContext().info("send: {} to {}", bodyStr, url);
+//        getContext().info("send: {} to {}", bodyStr, url);
         try {
             ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
             String body = stringResponseEntity.getBody();
-            getContext().info("recv: {}", body);
+//            getContext().info("recv: {}", body);
             return body;
         } catch ( Exception ex) {
             ex.printStackTrace();
@@ -442,7 +442,7 @@ public interface PayChannel {
 
         ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
         String body = stringResponseEntity.getBody();
-        getContext().info("recv: {}", body);
+//        getContext().info("recv: {}", body);
         return body;
     }
 
@@ -466,7 +466,7 @@ public interface PayChannel {
 //        ResponseEntity<String> stringResponseEntity = restTemplate.getForEntity(url, requestEntity, String.class);
         ResponseEntity<String> stringResponseEntity = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         String body = stringResponseEntity.getBody();
-        getContext().info("recv: {}", body);
+//        getContext().info("recv: {}", body);
         return body;
     }
 
@@ -481,10 +481,10 @@ public interface PayChannel {
                 .acceptCharset(StandardCharsets.UTF_8)
                 .headers(headers)
                 .body(body);
-        getContext().info("send: {} to {}, headers:{}", bodyStr, url, headers);
+//        getContext().info("send: {} to {}, headers:{}", bodyStr, url, headers);
         ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
         String bodyResp = stringResponseEntity.getBody();
-        getContext().info("recv: {}", bodyResp);
+//        getContext().info("recv: {}", bodyResp);
         return bodyResp;
     }
 

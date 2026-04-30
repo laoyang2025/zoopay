@@ -1102,7 +1102,6 @@ public class ApiService {
                         .set(response.getUtr() != null, ZChargeEntity::getUtr, response.getUtr())
                         .set(response.getUpi() != null, ZChargeEntity::getUpi, response.getUpi())
                         .set(response.getChannelOrder() != null, ZChargeEntity::getChannelOrder, response.getChannelOrder())
-
                 );
             });
             publisher.publishEvent(new ChargeSuccessEvent(this, id));

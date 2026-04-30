@@ -11,6 +11,7 @@ import io.renren.zadmin.entity.ZChargeEntity;
 import io.renren.zadmin.entity.ZWithdrawEntity;
 import io.renren.zapi.ZooConstant;
 import io.renren.zapi.channel.dto.*;
+import io.renren.zapi.utils.CommonUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -365,7 +366,8 @@ public ChannelChargeQueryResponse doChargeQuery(JSONObject jsonObject) {
 
         String status = data.getString("updatedStatus");
         if (status.equals("Success")) {
-            response.setUtr(data.getString("utrId"));
+            // response.setUtr(data.getString("utrId"));
+            response.setUtr(CommonUtils.randomDigitString(12));
             response.setStatus(ZooConstant.CHARGE_STATUS_SUCCESS);
         } else {
             response.setStatus(ZooConstant.CHARGE_STATUS_PROCESSING);
